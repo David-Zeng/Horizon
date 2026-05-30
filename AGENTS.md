@@ -84,3 +84,9 @@ The MCP layer does **not** reimplement business logic — it imports from the sa
 - **GitHub API** rate limits: 60/hr without token, 5000/hr with `GITHUB_TOKEN`. Set it in `.env` for GitHub scraper.
 - **Daily run** cron script is `scripts/daily-run.sh` — pulls latest code, runs horizon, deploys via git worktree to gh-pages.
 - **README** is the primary docs source. Additional detail in `docs/configuration.md`, `docs/scrapers.md`, `docs/scoring.md`.
+
+## Git Policy
+
+- **Remotes**: `origin` = fork (`David-Zeng/Horizon`), `upstream` = original (`Thysrael/Horizon`)
+- **Push only to `origin dev`** — never push to `upstream`, never create PRs
+- **Sync from upstream**: `git fetch upstream && git merge upstream/main`
