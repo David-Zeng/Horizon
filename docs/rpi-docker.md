@@ -58,6 +58,51 @@ docker compose -f docker-compose.rpi.yml run --rm horizon --hours 48
 docker compose -f docker-compose.rpi.yml logs -f
 ```
 
+## What Happens When You Run
+
+```
+docker compose -f docker-compose.rpi.yml run --rm horizon --hours 24
+```
+
+### Container Launch
+
+- `Dockerfile.rpi` builds a `python:3.11-slim` image with `uv` and all Horizon deps
+- `./data` → `/app/data` (config + output persist on host)
+- `./.env` → `/app/.env:ro` (secrets mounted read-only)
+- `--hours 24` overrides CMD → `uv run horizon --hours 24`
+- `--rm` deletes the container after exit (stateless, no cleanup needed)
+
+### Pipeline (2–5 minutes)
+
+```
+load_dotenv()     → reads DEEPSEEK_API_KEY from /app/.env
+StorageManager    → loads data/config.json (DeepSeek provider, score threshold, sources)
+Orchestrator      → runs the full pipeline:
+```
+
+| Stage | What It Does |
+|-------|-------------|
+| **1. Fetch** | All enabled scrapers run in parallel (RSS, HN, Reddit, GitHub, Telegram, Twitter) |
+| **2. Dedup** | Cross-source URL dedup + AI-powered topic dedup |
+| **3. Score & Filter** | Each item scored by DeepSeek API — only items ≥ threshold (default 6.0) survive |
+| **4. Enrich** | DuckDuckGo web search + second DeepSeek pass adds context |
+| **5. Summarize** | Markdown output in en + zh → saved to `data/summaries/` |
+| **6. Output** | If configured: email, webhook, or GitHub Pages deployment |
+
+### After the Run
+
+- Container exits and is removed (`--rm`)
+- `data/summaries/daily-*.md` — your AI-scored briefing
+- `data/seen.json` — dedup cache so next run skips repeats
+- `data/config.json` and `data/summaries/` survive on the host (volume mount)
+
+### Daily Scheduler Mode
+
+When running `up -d` instead of `run --rm`, ofelia triggers the pipeline daily via cron.
+The Horizon container is idled between runs — the scheduler calls `docker start horizon` at
+the cron time, the pipeline executes, and the container exits. ofelia detects completion and
+waits for the next trigger.
+
 ## Scheduling
 
 The compose file includes [ofelia](https://github.com/mcuadros/ofelia), a lightweight cron scheduler. Edit the schedule in `docker-compose.rpi.yml`:
