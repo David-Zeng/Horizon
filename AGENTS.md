@@ -85,6 +85,52 @@ The MCP layer does **not** reimplement business logic — it imports from the sa
 - **Daily run** cron script is `scripts/daily-run.sh` — pulls latest code, runs horizon, deploys via git worktree to gh-pages.
 - **README** is the primary docs source. Additional detail in `docs/configuration.md`, `docs/scrapers.md`, `docs/scoring.md`.
 
+## Raspberry Pi Deployment
+
+Pi-optimized setup for running Horizon on a Raspberry Pi with automatic daily deploy to GitHub Pages.
+
+### Scripts
+
+| Script | Run from | Purpose |
+|---|---|---|
+| `scripts/run-and-deploy.sh` | Mac | SSH into Pi → run Horizon → deploy (one-shot) |
+| `scripts/pi-deploy.sh` | Pi | Deploy `docs/` to `gh-pages` branch via git worktree |
+| `scripts/install-cron.sh` | Mac | Install daily cron job on Pi (6 AM Sydney) |
+
+### Pi Setup
+
+```bash
+# Copy files to Pi
+scp docker-compose.rpi.yml scripts/pi-deploy.sh pi@10.1.1.148:/home/pi/git_repo/Horizon/
+scp docs/_config.yml pi@10.1.1.148:/home/pi/git_repo/Horizon/docs/
+
+# On the Pi: set git remote to SSH (required for push)
+git remote set-url origin git@github.com:David-Zeng/Horizon.git
+
+# Install daily cron (runs Horizon + deploy at 6 AM Sydney)
+./scripts/install-cron.sh
+```
+
+### How it works
+
+```
+cron (6 AM) → docker compose run horizon --hours 24
+                    ↓ (writes summaries to docs/_posts/ via mount)
+            → ./scripts/pi-deploy.sh
+                    ↓ (git worktree → wipe old _posts/ → copy docs/ → push gh-pages)
+            → GitHub Pages rebuilds (~30s)
+            → https://david-zeng.github.io/Horizon/
+```
+
+### Key details
+
+- **`docker-compose.rpi.yml`** mounts `./docs:/app/docs` so the orchestrator's `docs/_posts/` output persists on disk. Runs container as host user (`UID:GID`).
+- **`UV_CACHE_DIR=/tmp/.uv-cache`** — non-root user can't write to default `/.cache/uv`.
+- **`pi-deploy.sh`** blocks pushes to upstream (`Thysrael/Horizon`). Set `HORIZON_FORK="David-Zeng/Horizon"` env var to suppress the check prompt.
+- **`docs/_config.yml`** — URL must match the fork (not `thysrael.github.io`). Update this after syncing from upstream.
+- **Git remote** must use SSH on the Pi — HTTPS lacks credentials for unattended push.
+- **`data/` and `docs/`** must be owned by the Pi user if running container as non-root.
+
 ## Git Policy
 
 - **Remotes**: `origin` = fork (`David-Zeng/Horizon`), `upstream` = original (`Thysrael/Horizon`)
