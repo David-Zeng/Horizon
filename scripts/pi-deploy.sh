@@ -64,6 +64,10 @@ trap "rm -rf $TMPDIR" EXIT
 git fetch origin gh-pages:gh-pages 2>/dev/null \
     || { git checkout --orphan gh-pages && git checkout main; }
 
+# Clean stale worktrees from interrupted runs
+git worktree prune
+rm -rf /tmp/tmp.* 2>/dev/null || true
+
 git worktree add "$TMPDIR" gh-pages
 rm -rf "$TMPDIR/_posts"
 cp -r docs/* "$TMPDIR/"

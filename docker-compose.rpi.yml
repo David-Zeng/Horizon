@@ -24,6 +24,7 @@ services:
       - ./.env:/app/.env:ro
     environment:
       - TZ=Australia/Sydney
+      - UV_CACHE_DIR=/tmp/.uv-cache
     user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
     # One-shot runner — ofelia will invoke it on schedule
