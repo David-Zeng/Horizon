@@ -5,328 +5,246 @@ date: 2026-05-31
 lang: en
 ---
 
-> From 21 items, 14 important content pieces were selected
+> From 18 items, 10 important content pieces were selected
 
 ---
 
-1. [Microsoft to convert perpetual Office licenses to read-only](#item-1) ⭐️ 8.0/10
-2. [Domain expertise is the real moat in the AI era](#item-2) ⭐️ 8.0/10
-3. [Accenture acquires Ookla for $1.2B](#item-3) ⭐️ 8.0/10
-4. [Zig ELF Linker Improvements Enable Fast Incremental Compilation](#item-4) ⭐️ 8.0/10
-5. [OpenRouter raises $113M Series B for LLM API unification](#item-5) ⭐️ 8.0/10
-6. [Anthropic details sandboxing techniques for Claude across products](#item-6) ⭐️ 8.0/10
-7. [Python ASGI apps in browser via Pyodide + Service Worker](#item-7) ⭐️ 8.0/10
-8. [Debugger for PyTorch Reveals Training Failures Are Local](#item-8) ⭐️ 8.0/10
-9. [Voxel Space Rendering Technique Explained and Demonstrated](#item-9) ⭐️ 7.0/10
-10. [OpenBSD's openrsync: A Secure rsync Implementation](#item-10) ⭐️ 7.0/10
-11. [ML students question data interoperability in robotics datasets](#item-11) ⭐️ 7.0/10
-12. [Shantell Sans Variable Font with Formality Slider](#item-12) ⭐️ 6.0/10
-13. [Why Word2Vec Output Weights Become Embeddings](#item-13) ⭐️ 6.0/10
-14. [Spiking neuron library optimized for CPU cache challenges PyTorch](#item-14) ⭐️ 6.0/10
+1. [Daily pill doubles survival time for pancreatic cancer in trial](#item-1) ⭐️ 9.0/10
+2. [Cloudflare Turnstile Uses WebGL Fingerprinting, Raises Privacy Concerns](#item-2) ⭐️ 8.0/10
+3. [Dav2d: Open-Source Decoder for AV2 Video Codec Released](#item-3) ⭐️ 8.0/10
+4. [Restartable Sequences: Efficient Lock-Free Per-CPU Data](#item-4) ⭐️ 8.0/10
+5. [Website Specification for Agent-Friendly Web](#item-5) ⭐️ 8.0/10
+6. [Anthropic details Claude sandboxing techniques across products](#item-6) ⭐️ 8.0/10
+7. [ASGI Apps in Browser via Pyodide + Service Worker](#item-7) ⭐️ 8.0/10
+8. [Bonsai Image 4B: 1-Bit Diffusion Model for iPhone](#item-8) ⭐️ 7.0/10
+9. [AI as ADHD Amplifier: Critic Cancels Subscription](#item-9) ⭐️ 7.0/10
+10. [Tool to Browse and Plan CVPR Workshop Days](#item-10) ⭐️ 6.0/10
 
 ---
 
 <a id="item-1"></a>
-## [Microsoft to convert perpetual Office licenses to read-only](https://consumerrights.wiki/w/Microsoft_Office_2019_and_2021_for_Mac_view-only_conversion_(2026)) ⭐️ 8.0/10
+## [Daily pill doubles survival time for pancreatic cancer in trial](https://www.theguardian.com/society/2026/may/31/daily-pill-daraxonrasib-double-survival-time-pancreatic-pancreas-cancer-clinical-trial) ⭐️ 9.0/10
 
-Microsoft plans to convert offline perpetual Office licenses (Office 2019 and 2021 for Mac) to read-only mode in 2026, effectively revoking the ability to edit documents. This change breaks the promise of indefinite use traditionally associated with perpetual licenses. This move undermines consumer trust in perpetual software licenses and could set a dangerous precedent for other vendors to degrade offline products. It pressures users to switch to subscription-based Microsoft 365, raising ethical and legal concerns about retroactive license changes. The change specifically targets Office 2019 and 2021 for Mac, with no announced date for Windows versions. Community speculation suggests the urgency may be linked to AI labs using offline Office in agents, where Microsoft wants each agent instance to have a separate license.
+A Phase 3 clinical trial showed that daraxonrasib, an oral daily pill, nearly doubled overall survival in patients with metastatic pancreatic cancer compared to chemotherapy (13.2 vs 6.7 months). Pancreatic cancer is one of the deadliest cancers, with limited treatment options; this breakthrough offers a convenient oral therapy that significantly extends survival and improves quality of life. Daraxonrasib is a pan-RAS inhibitor targeting mutant KRAS, which is present in over 90% of pancreatic cancers; the trial demonstrated a 60% reduction in risk of death. Side effects include rash, diarrhea, and fatigue.
 
-hackernews · antipurist · May 30, 23:26 · [Discussion](https://news.ycombinator.com/item?id=48341578)
+hackernews · c-oreills · May 31, 15:43 · [Discussion](https://news.ycombinator.com/item?id=48346629)
 
-**Background**: A perpetual software license authorizes an individual to use a program indefinitely after a one-time fee, without requiring ongoing payments. Microsoft has been shifting from perpetual licenses to subscription-based Microsoft 365, but this is the first instance of actively degrading functionality of already-purchased perpetual licenses. The change affects offline products that were explicitly marketed as fixed-in-time releases.
+**Background**: Pancreatic cancer has a five-year survival rate of about 12%, partly due to late diagnosis and resistance to existing therapies. KRAS mutations drive many cancers, and direct inhibition has been challenging until recent drugs like daraxonrasib. This drug is from Revolution Medicines and is being considered for accelerated approval.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://www.techtarget.com/whatis/definition/perpetual-software-license">www.techtarget.com › definition › perpetual - software - license What Is a Perpetual Software License? - TechTarget</a></li>
-<li><a href="https://sprintlaw.com.au/articles/understanding-perpetual-licenses-what-australian-businesses-need-to-know/">sprintlaw.com.au › articles › understanding- perpetual -licenses Perpetual Licences: How They Work In Australia</a></li>
-<li><a href="https://www.techspot.com/news/96637-microsoft-office-lifetime-license.html">www.techspot.com › news › 96637- microsoft - office -lifetime Microsoft Office is down to $29 for a lifetime license - TechSpot</a></li>
+<li><a href="https://www.forbes.com/sites/jessepines/2026/04/14/new-pancreatic-cancer-drug-nearly-doubles-survival-heres-what-patients-should-know/">www.forbes.com › sites › jessepines New Pancreatic Cancer Drug Nearly Doubles Survival. Here’s What...</a></li>
+<li><a href="https://ir.revmed.com/news-releases/news-release-details/daraxonrasib-demonstrates-unprecedented-overall-survival-benefit">Daraxonrasib Demonstrates Unprecedented Overall Survival Benefit in Pivotal Phase 3 RASolute 302 Clinical Trial in Patients with Metastatic Pancreatic Cancer | Revolution Medicines</a></li>
 
 </ul>
 </details>
 
-**Discussion**: Community comments express widespread outrage, with many users calling for boycotts and switching to alternatives like LibreOffice. Some highlight potential violations of consumer laws in Australia and other jurisdictions. Others speculate the change may be driven by AI agent licensing needs, where Microsoft wants each agent instance to require a separate subscription.
+**Discussion**: The community discussion includes a reference to Derek Lowe's favorable analysis of the drug, criticism of funding disparities where startup founders received more funding than the entire research group behind the medicine, and a question about combining the pill with chemotherapy for better results.
 
-**Tags**: `#Microsoft`, `#Office`, `#software licensing`, `#consumer rights`, `#anti-consumer`
+**Tags**: `#medical breakthrough`, `#pancreatic cancer`, `#drug trial`, `#oncology`
 
 ---
 
 <a id="item-2"></a>
-## [Domain expertise is the real moat in the AI era](https://www.brethorsting.com/blog/2026/05/domain-expertise-has-always-been-the-real-moat/) ⭐️ 8.0/10
+## [Cloudflare Turnstile Uses WebGL Fingerprinting, Raises Privacy Concerns](https://hacktivis.me/articles/cloudflare-turnstile-webgl-fingerprinting) ⭐️ 8.0/10
 
-A blog post argues that domain expertise, not just coding ability, is the enduring competitive advantage as AI tools advance, sparking a rich debate on the role of software engineers. The post has garnered 346 points and 216 comments on Hacker News. This article challenges the notion that AI will replace software engineers, emphasizing that deep domain knowledge combined with AI creates a powerful moat. It matters for engineers, founders, and anyone investing in skills in the age of AI, as it reframes what truly drives long-term value. The debate surfaced contrasting views: some commenters argue the goalposts for what makes a developer valuable keep shifting (from coding to architecture to taste to domain expertise), while others share real-world examples where domain experts without software engineering skills produced messy code. A key caveat is that domain expertise alone may not suffice without proper engineering discipline.
+Cloudflare Turnstile, a CAPTCHA alternative, now requires WebGL fingerprinting to verify users, which can break some browsers and increase privacy risks. This change undermines privacy promises of Turnstile and affects users of minority browsers, potentially forcing them to disable fingerprinting protections or switch browsers. WebGL fingerprinting creates a unique identifier based on GPU and rendering characteristics, and it can be blocked by privacy settings like Firefox's resistFingerprinting, but Turnstile fails if WebGL is blocked or not fingerprintable.
 
-hackernews · aaronbrethorst · May 30, 20:40 · [Discussion](https://news.ycombinator.com/item?id=48340411)
+hackernews · HypnoticOcelot · May 31, 14:13 · [Discussion](https://news.ycombinator.com/item?id=48345840)
 
-**Background**: "Vibe coding" is an AI-assisted programming practice where developers describe tasks in prompts and accept generated code without thorough review, coined by Andrej Karpathy in 2025. Domain expertise refers to deep knowledge of a specific industry or field, which allows professionals to ask the right questions and validate AI outputs. The blog post argues that as AI lowers the bar for coding, domain expertise becomes the true differentiator.
+**Background**: Cloudflare Turnstile is a privacy-focused alternative to CAPTCHAs that aims to verify users without visual puzzles. However, it relies on browser fingerprinting techniques, including WebGL, to distinguish humans from bots. WebGL fingerprinting exploits differences in GPU hardware and drivers to generate a unique hash, which can be used for tracking.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://en.wikipedia.org/wiki/Vibe_coding">Vibe coding</a></li>
+<li><a href="https://www.cloudflare.com/products/turnstile/">www. cloudflare .com › products › turnstile Cloudflare Turnstile - Easy CAPTCHA Alternative</a></li>
+<li><a href="https://browserleaks.com/webgl">WebGL Browser Report - WebGL Fingerprinting - BrowserLeaks</a></li>
 
 </ul>
 </details>
 
-**Discussion**: Commenters expressed mixed reactions: some questioned the ever-shifting goalposts of what makes a developer valuable, while others shared real-world anecdotes where domain experts without engineering skills produced messy code. A notable viewpoint is that software generalists themselves possess domain expertise in software, and that the field is expanding rather than shrinking.
+**Discussion**: Commenters express mixed views: some argue fingerprinting is necessary for bot protection, while others criticize it as invasive. One user notes that Firefox's resistFingerprinting is not enabled by default even in strict mode, causing compatibility issues. A minority browser maintainer reports user complaints about Turnstile breaking their browser.
 
-**Tags**: `#domain expertise`, `#AI`, `#software engineering`, `#vibe coding`, `#competitive moat`
+**Tags**: `#privacy`, `#fingerprinting`, `#Cloudflare`, `#WebGL`, `#browser compatibility`
 
 ---
 
 <a id="item-3"></a>
-## [Accenture acquires Ookla for $1.2B](https://newsroom.accenture.com/news/2026/accenture-to-acquire-ookla-to-strengthen-network-intelligence-and-experience-with-data-and-ai-for-enterprises) ⭐️ 8.0/10
+## [Dav2d: Open-Source Decoder for AV2 Video Codec Released](https://jbkempf.com/blog/2026/dav2d/) ⭐️ 8.0/10
 
-Accenture has announced the acquisition of Ookla, the company behind Speedtest and Downdetector, for $1.2 billion to enhance its network intelligence and AI capabilities for enterprises and telecom providers. This acquisition signals the growing value of network performance data for telecom operators and enterprises, as Accenture gains access to Ookla's massive dataset of over 250 million consumer-initiated tests per month and its suite of network analytics tools. Ookla's data products include Speedtest, Downdetector, Ekahau, and RootMetrics, and the company generates significant revenue by selling anonymized network insights to telecoms. Accenture was already a competitor via its earlier Umlaut acquisition.
+VideoLAN has released dav2d, an early open-source, CPU-based decoder for the newly finalized AV2 video codec, which was officially released on May 28, 2026. AV2 decoding is roughly five times more complex than AV1, making software-only real-time decoding extremely challenging on current hardware; dav2d provides a necessary foundation for AV2 adoption and performance optimization. Dav2d is initially focused on correctness and cross-platform support (x86, ARM, RISC-V), with performance optimizations planned later. The AV2 codec achieves about 30% lower bitrate than AV1 at similar visual quality.
 
-hackernews · Garbage · May 30, 16:28 · [Discussion](https://news.ycombinator.com/item?id=48337987)
+hackernews · captain_bender · May 31, 11:44 · [Discussion](https://news.ycombinator.com/item?id=48344961)
 
-**Background**: Ookla is best known for Speedtest.net, a widely used internet speed testing service, and Downdetector, which tracks service outages. Telecom operators pay high annual fees for aggregated data that helps them optimize network coverage and identify weak spots.
+**Background**: AV2 is the successor to the open, royalty-free AV1 codec developed by the Alliance for Open Media. It introduces significant innovations in partitioning, prediction, and transforms, leading to higher compression efficiency but also drastically increased decoding complexity. A software decoder like dav2d is essential for testing, validation, and eventual hardware implementation.
 
-**Discussion**: Commenters highlight that the real value lies in the data business, not the consumer-facing products. One former employee notes that the deal is essentially a data acquisition, and that Accenture was already a competitor via Umlaut. Some question the complexity of the products, while others point out the lucrative nature of selling network intelligence to telcos.
+<details><summary>References</summary>
+<ul>
+<li><a href="https://www.phoronix.com/news/Dav2d-Open-Source-AV2-Decode">VideoLAN Publishes Dav2d For Open-Source AV2 Decoder - Phoronix</a></li>
+<li><a href="https://videocardz.com/newz/videolan-publishes-dav2d-an-early-cpu-decoder-for-av2-video-codec">VideoLAN publishes dav2d, an early CPU decoder for AV2 video codec - VideoCardz.com</a></li>
 
-**Tags**: `#acquisition`, `#Accenture`, `#Ookla`, `#network intelligence`, `#data`
+</ul>
+</details>
+
+**Discussion**: The Hacker News community expressed strong interest, with many noting the site was down due to a 'hug of death' (error 429). Commenters highlighted that AV2 decoding complexity is concerning, as AV1 software decoding is already intensive, and benchmarks will be eagerly anticipated.
+
+**Tags**: `#video codec`, `#AV2`, `#decoder`, `#software engineering`, `#performance`
 
 ---
 
 <a id="item-4"></a>
-## [Zig ELF Linker Improvements Enable Fast Incremental Compilation](https://ziglang.org/devlog/2026/#2026-05-30) ⭐️ 8.0/10
+## [Restartable Sequences: Efficient Lock-Free Per-CPU Data](https://justine.lol/rseq/) ⭐️ 8.0/10
 
-Zig's latest devlog (2026-05-30) details significant improvements to its ELF linker, including support for fast incremental linking that dramatically speeds up development iteration. These improvements make Zig a compelling C replacement, enabling development iteration speeds comparable to Python or JavaScript while retaining C/Rust-level performance. The incremental linker is currently focused on ELF targets (Linux); it may be mutually exclusive with link-time optimization (LTO) for release builds.
+This article by Justine Tunney provides an in-depth technical explanation of restartable sequences, a Linux kernel feature using the rseq() syscall to enable per-CPU data structures without mutexes or atomics. Restartable sequences offer a more efficient concurrency mechanism for multi-core systems, reducing overhead compared to traditional locking and atomic operations, which is critical for high-performance applications like databases and network servers. The rseq() syscall requires a 32-byte per-thread ABI and the kernel can restart or abort sequences if interrupted, ensuring correctness. A librseq library exists to simplify usage without writing assembly.
 
-hackernews · kristoff_it · May 30, 17:29 · [Discussion](https://news.ycombinator.com/item?id=48338673)
+hackernews · grappler · May 31, 14:38 · [Discussion](https://news.ycombinator.com/item?id=48346019)
 
-**Background**: The Executable and Linkable Format (ELF) is a common standard file format for executables, object code, and shared libraries on Unix-like systems. Incremental compilation recompiles only changed portions of a program, reducing build times. Zig is a systems programming language aiming to replace C with modern tooling.
+**Background**: Restartable sequences allow userspace to safely update per-CPU data without heavyweight atomic instructions. When a sequence is interrupted, the kernel rolls back to a defined restart point and retries, avoiding data races. This feature was integrated into Linux kernel starting from version 4.18.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://en.wikipedia.org/wiki/Executable_and_Linkable_Format">en.wikipedia.org › wiki › Executable_and_Linkable_Format Executable and Linkable Format - Wikipedia</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Incremental_compiler">en.wikipedia.org › wiki › Incremental_compiler Incremental compiler - Wikipedia</a></li>
+<li><a href="https://justine.lol/rseq/">Restartable Sequences</a></li>
+<li><a href="https://docs.kernel.org/userspace-api/rseq.html">Restartable Sequences — The Linux Kernel documentation</a></li>
+<li><a href="https://www.efficios.com/blog/2019/02/08/linux-restartable-sequences/">The 5-year journey to bring restartable sequences to Linux - EfficiOS</a></li>
 
 </ul>
 </details>
 
-**Discussion**: The community is highly enthusiastic, with users like bpavuk declaring Zig will become 'THE C replacement'. derefr raises a technical concern about incremental linking being incompatible with LTO. Others discuss porting language runtimes (e.g., Raku's MOARVM) to Zig for performance gains.
+**Discussion**: The community discussion includes praise for the clear explanation, but also criticism of the article's opening about expensive workstations and the lack of reference to the librseq library. One commenter questioned the claim that CPU internal mutexes may be inferior to userspace implementations.
 
-**Tags**: `#Zig`, `#linker`, `#compilation`, `#programming languages`, `#systems programming`
+**Tags**: `#linux`, `#kernel`, `#concurrency`, `#rseq`, `#lock-free`
 
 ---
 
 <a id="item-5"></a>
-## [OpenRouter raises $113M Series B for LLM API unification](https://openrouter.ai/announcements/series-b) ⭐️ 8.0/10
+## [Website Specification for Agent-Friendly Web](https://specification.website/) ⭐️ 8.0/10
 
-OpenRouter has raised $113 million in a Series B funding round to continue operating as a unified API proxy that provides access to various large language models (LLMs) from providers like OpenAI, Anthropic, Google, and Mistral. This funding underscores the growing demand for infrastructure that simplifies LLM access, especially as the landscape of models expands rapidly. It validates the proxy model for reducing friction in trying and integrating multiple LLMs, which is crucial for developers building AI applications. OpenRouter charges a small surcharge (around 5%) on API calls, and offers features like billing caps, fallback models, and log streaming. The company remains founder-led and founder-controlled after the raise.
+A new website specification has been published at specification.website, proposing best practices to make websites more compatible with AI agents. The spec covers web standards, accessibility, and agent readiness, and has sparked significant community discussion. As AI agents increasingly interact with websites, standardized guidelines can reduce friction and improve interoperability. This specification could influence how developers build websites, but its practicality and potential for misuse remain debated. The specification includes an 'Agent Readiness' section, which has drawn skepticism for potentially enabling bad actors to show different content to agents versus humans. Some commenters noted that the site itself does not follow its own required practices.
 
-hackernews · freeCandy · May 30, 17:27 · [Discussion](https://news.ycombinator.com/item?id=48338660)
+hackernews · k1m · May 31, 07:09 · [Discussion](https://news.ycombinator.com/item?id=48343683)
 
-**Background**: OpenRouter acts as a proxy between developers and multiple LLM providers, offering a single API endpoint that works across different models. This eliminates the need to manage separate API keys, billing, and rate limits for each provider. As the number of LLMs has grown, such a unified interface has become increasingly valuable for testing and deploying AI applications.
+**Background**: AI agents often struggle to interact with websites because existing interfaces are designed for humans, not machines. Efforts like A2WF (Agent-to-Web Framework) and WebMCP aim to standardize how websites expose capabilities to agents, but no universal solution exists yet.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://grokipedia.com/page/openrouter">OpenRouter</a></li>
+<li><a href="https://github.com/a2wf/spec">github.com › a2wf › spec GitHub - a2wf/spec: A2WF Specification — The Agent-to-Web...</a></li>
+<li><a href="https://web.dev/articles/ai-agent-site-ux">web.dev › articles › ai- agent -site-ux Build agent-friendly websites - web.dev</a></li>
+<li><a href="https://www.w3.org/community/agentprotocol/">www.w3.org › community › agentprotocol AI Agent Protocol Community Group - World Wide Web Consortium...</a></li>
 
 </ul>
 </details>
 
-**Discussion**: Community comments highlight OpenRouter's value in reducing friction for trying new models and providing billing caps, though some question the surcharge for heavy use. One commenter noted that the company seems to be a closed-source service rather than an open-source tool, which misaligns with the 'Open' in its name.
+**Discussion**: Community reactions are mixed: some praise the specification as a practical tool (e.g., rsolva used it successfully with a local model), while others criticize its AI-generated style and question the need for special agent allowances (Latty). One commenter, kaiokendev, noted the irony that the site fails its own standards.
 
-**Tags**: `#funding`, `#LLM`, `#AI infrastructure`, `#API`, `#startup`
+**Tags**: `#web standards`, `#AI agents`, `#accessibility`, `#best practices`
 
 ---
 
 <a id="item-6"></a>
-## [Anthropic details sandboxing techniques for Claude across products](https://simonwillison.net/2026/May/30/how-we-contain-claude/#atom-everything) ⭐️ 8.0/10
+## [Anthropic details Claude sandboxing techniques across products](https://simonwillison.net/2026/May/30/how-we-contain-claude/#atom-everything) ⭐️ 8.0/10
 
-Anthropic published a detailed technical overview of sandboxing methods used across Claude.ai, Claude Code, and Cowork, including gVisor, Seatbelt, Bubblewrap, and full VMs. They also disclosed an exfiltration vector via api.anthropic.com/v1/files that was previously covered. This transparency helps build trust in AI agent safety, as sandboxing is critical to prevent credential exfiltration and unauthorized actions. It sets a precedent for other companies to document security measures thoroughly. Claude.ai uses gVisor; Claude Code uses Seatbelt on macOS and Bubblewrap on Linux; Claude Cowork uses a full VM (Apple Virtualization on macOS, HCS on Windows). Anthropic also open-sourced the Sandbox Runtime (srt) tool.
+Anthropic published a comprehensive technical overview of how they sandbox Claude across Claude.ai, Claude Code, and Cowork, detailing the specific sandboxing technologies used for each product. This rare documentation of production-grade AI agent sandboxing provides much-needed transparency for developers and security professionals evaluating the trustworthiness of AI deployments. Claude.ai uses gVisor, Claude Code uses Seatbelt (macOS) and Bubblewrap (Linux), and Cowork runs full VMs; the post also describes risks like the /v1/files exfiltration vector they previously missed.
 
 rss · Simon Willison · May 30, 21:36
 
-**Background**: Sandboxing isolates AI agents to limit damage from malicious actions or bugs. gVisor is an application kernel that provides an isolation boundary between the application and host kernel, commonly used with containers. Seatbelt is Apple's sandbox mechanism for macOS, restricting applications to allowed actions defined in a profile. Bubblewrap is a lightweight Linux sandbox utility that unprivileged processes can use to restrict access to filesystem and other resources.
+**Background**: Sandboxing isolates an AI agent from the host system to prevent unauthorized access or damage. Different sandboxing techniques offer varying levels of isolation: gVisor is a kernel-level sandbox for containers, Seatbelt is Apple's native macOS restriction mechanism, and Bubblewrap is a lightweight Linux sandbox. Virtual machines provide the strongest isolation by emulating entire hardware.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://gvisor.dev/">gvisor .dev The Container Security Platform - gVisor</a></li>
+<li><a href="https://en.wikipedia.org/wiki/GVisor">en.wikipedia.org › wiki › GVisor gVisor - Wikipedia</a></li>
+<li><a href="https://wiki.archlinux.org/title/Bubblewrap">Bubblewrap - ArchWiki</a></li>
 <li><a href="https://hacktricks.wiki/en/macos-hardening/macos-security-and-privilege-escalation/macos-security-protections/macos-sandbox/index.html">hacktricks.wiki › macos - sandbox › index macOS Sandbox - HackTricks</a></li>
-<li><a href="https://github.com/containers/bubblewrap">github.com › containers › bubblewrap GitHub - containers/bubblewrap: Low-level unprivileged sandboxing...</a></li>
 
 </ul>
 </details>
 
-**Tags**: `#AI safety`, `#sandboxing`, `#Claude`, `#security`, `#Anthropic`
+**Tags**: `#sandboxing`, `#AI safety`, `#security`, `#Claude`, `#Anthropic`
 
 ---
 
 <a id="item-7"></a>
-## [Python ASGI apps in browser via Pyodide + Service Worker](https://simonwillison.net/2026/May/30/pyodide-asgi-browser/#atom-everything) ⭐️ 8.0/10
+## [ASGI Apps in Browser via Pyodide + Service Worker](https://simonwillison.net/2026/May/30/pyodide-asgi-browser/#atom-everything) ⭐️ 8.0/10
 
-Simon Willison demonstrated a technique to run Python ASGI apps in the browser using Pyodide and Service Workers, overcoming the limitation of previous Web Worker approach where JavaScript in <script> tags was not executed. He created demos of a basic ASGI app and Datasette 1.0a31 running entirely client-side. This approach enables full-featured Python web applications to run in the browser without a server, including dynamic JavaScript interactivity. It significantly expands the possibilities for Python-based tools like Datasette to be used offline or in environments where server deployment is not practical. The technique uses Service Workers to intercept network requests and serve responses generated by the Python ASGI app running in Pyodide, allowing script tags to execute normally. The solution required Claude Opus 4.8 to prototype and is expected to be integrated into Datasette Lite.
+Simon Willison demonstrated a method to run Python ASGI apps in the browser using Pyodide and a Service Worker, solving the limitation of JavaScript execution in script tags. This approach enables full JavaScript execution within Python ASGI apps running client-side, unlocking rich interactivity and plugin compatibility for tools like Datasette Lite. It could significantly expand the capabilities of Python-in-browser applications. The new approach replaces Web Workers with Service Workers, allowing the browser to handle navigation and execute script tags naturally. A basic ASGI FastCGI demo and a Datasette 1.0a31 demo are provided.
 
 rss · Simon Willison · May 30, 21:02
 
-**Background**: ASGI (Asynchronous Server Gateway Interface) is a standard for asynchronous Python web servers and applications, succeeding WSGI. Pyodide is a port of CPython to WebAssembly that allows running Python code in the browser. Previously, Datasette Lite used Web Workers to run Python, but that approach could not execute JavaScript embedded in generated HTML. Service Workers, a more capable type of web worker, can intercept fetch events and thus enable full page rendering with JavaScript execution.
+**Background**: Pyodide is a Python runtime compiled to WebAssembly that runs in the browser, enabling Python code execution client-side. ASGI (Asynchronous Server Gateway Interface) is a standard for building asynchronous web applications in Python, serving as the successor to WSGI. Service Workers are scripts that run in the background in a web browser, capable of intercepting network requests.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://en.wikipedia.org/wiki/Asynchronous_Server_Gateway_Interface">en.wikipedia.org › wiki › Asynchronous_Server_Gateway_Interface Asynchronous Server Gateway Interface - Wikipedia</a></li>
-<li><a href="https://asgi.readthedocs.io/en/latest/">asgi .readthedocs.io › en › latest ASGI Documentation — ASGI 3.0 documentation</a></li>
-<li><a href="https://github.com/pyodide/pyodide">github.com › pyodide › pyodide GitHub - pyodide/pyodide: Pyodide is a Python distribution for... pyodide .com Home - Pyodide portal.online-python.com › pyodide Online Python (Pyodide) - Run Python in Browser via WebAssembly cnseniorious000.github.io › pyodide pyodide | Pyodide is a Python distribution for the browser and... pyodide -ryanking13.readthedocs.io › en › stable Pyodide — Version 0.17.0 Pyodide — Version 0.29.3 Pyodide — Version 0.17.0 Pyodide – Run Python in Browser with WebAssembly Pyodide – Run Python in Browser with WebAssembly www.npmjs.com › package › pyodide pyodide - npm</a></li>
+<li><a href="https://medium.com/tech-vibes/running-python-code-natively-in-the-browser-using-pyodide-fc5d364613e8">Running Python Code Natively in the Browser Using Pyodide | Medium</a></li>
+<li><a href="https://en.wikipedia.org/wiki/ASGI">ASGI</a></li>
 
 </ul>
 </details>
 
-**Tags**: `#Pyodide`, `#ASGI`, `#Service Workers`, `#WebAssembly`, `#Python`
+**Tags**: `#Pyodide`, `#WebAssembly`, `#ASGI`, `#Service Workers`, `#Python in Browser`
 
 ---
 
 <a id="item-8"></a>
-## [Debugger for PyTorch Reveals Training Failures Are Local](https://www.reddit.com/r/MachineLearning/comments/1trui0b/what_i_learned_building_a_debugger_for_pytorch/) ⭐️ 8.0/10
+## [Bonsai Image 4B: 1-Bit Diffusion Model for iPhone](https://prismml.com/news/bonsai-image-4b) ⭐️ 7.0/10
 
-A developer built and open-sourced NeuralDBG, a debugger that hooks into PyTorch training loops to automatically detect and localize failures like vanishing gradients, exploding gradients, and data anomalies by monitoring per-layer gradient norms and transitions. This insight shifts debugging from looking at aggregate loss curves to monitoring local layer behavior, making failure diagnosis faster and more actionable for machine learning practitioners. NeuralDBG extracts semantic events (e.g., gradient norm transitions) rather than raw tensors, and provides a simple code snippet to catch 80% of training failures early by checking gradient norms per layer.
+Bonsai Image 4B is a 4-billion-parameter diffusion model using 1-bit quantization, enabling image generation directly on an iPhone via the Flux.2 architecture. This breakthrough allows high-quality image generation on local devices without cloud dependency, potentially democratizing AI-powered creativity for mobile users and reducing reliance on expensive subscriptions. Despite the 1-bit quantization, the model still relies on a 1.8GB text encoder for prompt understanding, and generation speed is marginally slower than the base Flux.2 model. Some community members note that other models like Stable Diffusion XL already run on iPhones.
 
-reddit · r/MachineLearning · /u/ProgrammerNo8287 · May 30, 08:48
+hackernews · modinfo · May 31, 15:04 · [Discussion](https://news.ycombinator.com/item?id=48346257)
 
-**Background**: In deep learning, vanishing gradients occur when gradients become exponentially smaller in early layers, halting learning, while exploding gradients cause unstable large updates. Both problems arise from repeated multiplication during backpropagation. Traditional debugging uses loss curves or gradient histograms, which are too global or noisy. Monitoring per-layer gradient norm transitions offers a localized, early warning.
+**Background**: Diffusion models generate images by iteratively denoising random noise. 1-bit quantization compresses model weights to just two values, drastically reducing storage and memory footprint but often at a cost to output quality. Flux.2 is a 32-billion-parameter rectified flow model from Black Forest Labs that achieves state-of-the-art image generation.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://en.wikipedia.org/wiki/Vanishing_gradients">Vanishing gradients</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Exploding_gradient_problem">Exploding gradient problem</a></li>
+<li><a href="https://github.com/nihal-gazi/1-bit-diffusion">GitHub - nihal-gazi/ 1 - bit - diffusion : Training a 1 - bit diffusion model as...</a></li>
+<li><a href="https://arxiv.org/pdf/2404.05662v1">BinaryDM: Towards Accurate Binarization of Diffusion Model</a></li>
+<li><a href="https://bfl.ai/blog/flux-2">FLUX . 2 : Frontier Visual Intelligence | Black Forest Labs</a></li>
 
 </ul>
 </details>
 
-**Tags**: `#PyTorch`, `#Debugging`, `#Training`, `#Machine Learning`, `#Failure Diagnosis`
+**Discussion**: Community reactions are mixed: some are excited about running AI locally without subscriptions, while others question whether the speed and dependencies (like the large text encoder) offer real improvements over existing local models like Stable Diffusion XL. Some technical users also note that Bonsai is based on a rectified flow model, not a traditional diffusion model.
+
+**Tags**: `#image generation`, `#on-device AI`, `#diffusion models`, `#iPhone`, `#1-bit`
 
 ---
 
 <a id="item-9"></a>
-## [Voxel Space Rendering Technique Explained and Demonstrated](https://s-macke.github.io/VoxelSpace/) ⭐️ 7.0/10
+## [AI as ADHD Amplifier: Critic Cancels Subscription](https://simonwillison.net/2026/May/31/the-solution-might-be-cancelling-my-ai-subscription/#atom-everything) ⭐️ 7.0/10
 
-A detailed demo and explanation of the Voxel Space height-map rendering technique, originally used in the 1992 game Comanche, has been released online with source code. This technique, despite being historical, remains influential for retro game development and algorithmic art, demonstrating efficient terrain rendering with minimal code. The core rendering algorithm consists of fewer than 20 lines of code, using a height map and color map to create a 2.5D terrain view.
+David Wilson argues that AI tools like Claude act as 'thermonuclear ADHD amplifiers,' leading to many unfinished projects and wasted attention, prompting him to consider cancelling his AI subscription. The post critiques the cheap rewards and lack of friction in AI tooling. This critique highlights a growing concern about AI's impact on productivity and attention, especially for knowledge workers and developers. It challenges the narrative that AI always boosts efficiency, emphasizing the need for discipline and intentional use. Wilson lists over 16 projects he started with AI, often spinning up complex solutions quickly but abandoning them. The Hacker News discussion reveals a split: some with ADHD find AI helps them hyperfocus and finish projects, while others echo Wilson's concerns.
 
-hackernews · davikr · May 30, 14:25 · [Discussion](https://news.ycombinator.com/item?id=48336564)
+rss · Simon Willison · May 31, 16:31
 
-**Background**: Voxel Space is a 2.5D rendering technique that simulates 3D terrain by ray casting through a height map. Unlike true voxel rendering which splits space equally in all three axes, Voxel Space represents terrain as a set of prisms with fixed-size square bases. This was used in the 1992 flight combat game Comanche to create immersive landscapes on limited hardware.
+**Background**: Claude is a large language model developed by Anthropic, often used for coding and conversation. AI coding agents can generate complete, tested projects from a brief prompt, drastically reducing development time. This ease of creation raises questions about project sustainability and value.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://github.com/s-macke/VoxelSpace">github.com › s-macke › VoxelSpace GitHub - s-macke/VoxelSpace: Terrain rendering algorithm in less...</a></li>
-<li><a href="https://s-macke.github.io/VoxelSpace/">s-macke.github.io › VoxelSpace Voxel Space | VoxelSpace</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Claude_(language_model)">en.wikipedia.org › wiki › Claude_(language_model) Claude (language model) - Wikipedia</a></li>
 
 </ul>
 </details>
 
-**Discussion**: Community comments clarified that Voxel Space is technically a height map rather than true voxels. One commenter shared a personal project porting the technique to the AGS Engine, while another noted the algorithm's efficiency with a C++ implementation using original Comanche maps.
+**Discussion**: Hacker News commenters offered mixed perspectives: some with ADHD report that AI helps them achieve focus and complete side projects for the first time, while others agree with Wilson that AI amplifies distraction and leads to abandoned work. The discussion highlights a split in how different individuals experience AI's attention effects.
 
-**Tags**: `#voxel rendering`, `#heightmap`, `#game development`, `#retro graphics`, `#algorithmic art`
+**Tags**: `#AI`, `#productivity`, `#attention`, `#tooling`, `#critique`
 
 ---
 
 <a id="item-10"></a>
-## [OpenBSD's openrsync: A Secure rsync Implementation](https://github.com/kristapsdz/openrsync) ⭐️ 7.0/10
+## [Tool to Browse and Plan CVPR Workshop Days](https://www.reddit.com/r/MachineLearning/comments/1tsy7rz/i_built_a_tool_to_browse_and_plan_cvpr/) ⭐️ 6.0/10
 
-The OpenBSD team has released openrsync, a secure reimplementation of rsync featuring pledge(2) and unveil(2) sandboxing for enhanced security. openrsync significantly improves file transfer security by restricting system calls and file system access, reducing attack surface. This matters for system administrators and users who rely on rsync for data synchronization, especially in untrusted network environments. openrsync is designed to be portable and can be compiled on Linux and other Unix-like systems, though full pledge/unveil protection requires OpenBSD. The project was originally developed as part of a RPKI validator.
+A developer built CVPR Workshop Radar, a web app that aggregates and organizes CVPR 2026 workshops and tutorials into a searchable, filterable interface with personal scheduling. This tool solves the practical problem of scattered information across dozens of workshop websites, making it easier for attendees to plan their schedule and discover relevant events. The app features search by title/organizer/summary, filtering by date/type/track, timeline views, offline support, and local storage without requiring an account; it uses automated metadata extraction and LLM-assisted processing from the official CVPR PDF.
 
-hackernews · sph · May 30, 10:51 · [Discussion](https://news.ycombinator.com/item?id=48334854)
+reddit · r/MachineLearning · /u/Gabrysse · May 31, 15:21
 
-**Background**: rsync is a widely-used utility for efficient file transfer and synchronization. OpenBSD's pledge(2) system call restricts a process to only use specified system calls, while unveil(2) limits file system visibility. Together they implement the principle of least privilege, mitigating potential vulnerabilities.
+**Background**: CVPR (Conference on Computer Vision and Pattern Recognition) is the premier annual computer vision conference, featuring a main conference and many co-located workshops and tutorials. Attendees often struggle to browse dozens of separate workshop websites to find schedules and topics. This tool centralizes that information to reduce friction.
 
 <details><summary>References</summary>
 <ul>
-<li><a href="https://en.wikipedia.org/wiki/OpenBSD_security_features">OpenBSD security features - Wikipedia</a></li>
-<li><a href="https://man.openbsd.org/unveil">man.openbsd.org › unveil unveil (2) - OpenBSD manual pages</a></li>
-<li><a href="https://man.serenityos.org/man2/pledge.html">man.serenityos.org › man2 › pledge pledge (2) - SerenityOS man pages</a></li>
+<li><a href="https://github.com/Gabrysse/cvprworkshopradar">github.com › Gabrysse › cvprworkshopradar GitHub - Gabrysse/cvprworkshopradar: Search, filter, and plan...</a></li>
+<li><a href="https://cvpr.thecvf.com/virtual/2026/events/workshop">cvpr .thecvf.com › virtual › 2026 CVPR 2026 Workshops</a></li>
 
 </ul>
 </details>
 
-**Discussion**: Commenters reported that openrsync has improved over time but still has some compatibility gaps with Samba rsync, such as handling of certain path patterns. One comment noted that the project emerged from a RPKI validator project, providing context. Another comment mentioned a Go implementation by the Gokrazy team. There was also discussion about the importance of pledge/unveil for security, with questions about Linux support.
-
-**Tags**: `#rsync`, `#OpenBSD`, `#security`, `#file transfer`, `#open-source`
-
----
-
-<a id="item-11"></a>
-## [ML students question data interoperability in robotics datasets](https://www.reddit.com/r/MachineLearning/comments/1tryf0a/before_we_spend_months_processing_opensource/) ⭐️ 7.0/10
-
-Two machine learning students propose that the robotics field suffers from a data interoperability problem rather than a data scarcity problem, and plan to normalize all public robot-learning datasets into a common schema. If successful, this effort could dramatically reduce the preprocessing burden for robotics researchers and enable more widespread reuse of diverse datasets across different embodiments and tasks, accelerating progress in vision-language-action (VLA) models and embodied AI. The students note that every dataset they encountered uses different assumptions, schemas, sensors, coordinate frames, and metadata standards, making data from different sources difficult to combine. They plan to take every public robot-learning dataset, normalize it, enrich it with metadata and quality signals, and release it back in an open format.
-
-reddit · r/MachineLearning · /u/sigma_crusader · May 30, 12:18
-
-**Background**: Vision-Language-Action (VLA) models are AI models that take an image and a text instruction to directly output robot actions, requiring large amounts of diverse training data. However, robotics datasets are often collected by different teams with distinct hardware and software stacks, leading to interoperability issues that hinder combining datasets. Projects like LeRobot on Hugging Face aim to aggregate datasets, but normalization remains a challenging bottleneck.
-
-<details><summary>References</summary>
-<ul>
-<li><a href="https://en.wikipedia.org/wiki/Vision–language–action_model">en.wikipedia.org › wiki › Vision–language–action_model Vision–language–action model - Wikipedia</a></li>
-<li><a href="https://www.techtimes.com/articles/317129/20260525/open-source-robotics-ai-reaches-inflection-point-lerobot-hub-surpasses-58000-datasets-one-year.htm">www.techtimes.com › articles › 317129 Open Source Robotics AI Reaches Inflection Point: LeRobot Hub...</a></li>
-
-</ul>
-</details>
-
-**Tags**: `#robotics`, `#datasets`, `#data interoperability`, `#VLA`, `#machine learning`
-
----
-
-<a id="item-12"></a>
-## [Shantell Sans Variable Font with Formality Slider](https://shantellsans.com/process) ⭐️ 6.0/10
-
-Shantell Sans is a variable font released in 2023 that features an innovative 'formality' axis, allowing users to slide between informal and formal letterforms. It has been praised for its design and technical execution. This font demonstrates the creative potential of variable font technology, offering a novel way to adjust typographic tone. It may inspire more expressive and adaptable typefaces in digital design. The formality slider ranges from a casual, handwritten style to a more structured, refined appearance. The font is available on Google Fonts as an open-source variable font.
-
-hackernews · aleda145 · May 30, 22:06 · [Discussion](https://news.ycombinator.com/item?id=48341062)
-
-**Background**: Variable fonts are a modern font format that packs multiple styles (e.g., weight, width) into a single file, allowing smooth interpolation via axes. The formality axis is a custom axis, not one of the five registered axes (weight, width, optical size, slant, italics). This technology enables dynamic typography responsive to context.
-
-<details><summary>References</summary>
-<ul>
-<li><a href="https://en.wikipedia.org/wiki/Variable_font">en.wikipedia.org › wiki › Variable_font Variable font - Wikipedia</a></li>
-<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Fonts/Variable_fonts">developer.mozilla.org › Web › CSS Variable fonts - CSS | MDN - MDN Web Docs</a></li>
-
-</ul>
-</details>
-
-**Discussion**: Commenters expressed admiration for the font's beauty and the formality slider, calling it one of the coolest uses of a variable font axis. Some drew parallels to Comic Sans but noted Shantell Sans goes further, and a user questioned whether a corporate brand could adopt such a human-centric font.
-
-**Tags**: `#typography`, `#variable fonts`, `#design`, `#open source`, `#comic sans`
-
----
-
-<a id="item-13"></a>
-## [Why Word2Vec Output Weights Become Embeddings](https://www.reddit.com/r/MachineLearning/comments/1trvuxb/why_do_the_output_layer_weights_become_word/) ⭐️ 6.0/10
-
-A Reddit user asked for an intuitive and mathematical explanation of why the output layer weights in Word2Vec become semantic word embeddings, highlighting a common point of confusion among learners. Understanding this mechanism is crucial for grasping how word embeddings are learned, which underpins many NLP applications and helps practitioners design better models. Both the input (W) and output (W') weight matrices can serve as word vectors; in some cases, averaging them yields better results. The output weights acquire semantics because they are trained to predict context words from the hidden representation.
-
-reddit · r/MachineLearning · /u/aaryantiwari26 · May 30, 10:06
-
-**Background**: Word2Vec is a neural network-based method for learning word embeddings, encoding semantic similarity into dense vectors. In CBOW or Skip-gram architectures, the model uses two weight matrices: input-to-hidden (W) and hidden-to-output (W'). The hidden layer produces a compressed representation, and the output layer predicts context words. Through training, both matrices capture word co-occurrence patterns, so their weights become meaningful embeddings.
-
-<details><summary>References</summary>
-<ul>
-<li><a href="https://medium.com/data-science-collective/language-ai-word2vec-deconstructed-d88d9d5859c1">medium.com › data-science-collective › language-ai- word2vec Word2Vec Explained: A Deep Dive into the Model Architecture -...</a></li>
-<li><a href="https://stats.stackexchange.com/questions/342174/word2vec-difference-between-the-two-weight-matrices">stats.stackexchange.com › questions › 342174 Word2Vec : Difference between the two Weight matrices</a></li>
-<li><a href="https://menghan-wang.github.io/posts/2022/09/Word-vector2/">menghan-wang.github.io › posts › 2022 Word Embedding (II): Word2Vec - Menghan Wang</a></li>
-
-</ul>
-</details>
-
-**Tags**: `#Word2Vec`, `#embeddings`, `#neural networks`, `#NLP`
-
----
-
-<a id="item-14"></a>
-## [Spiking neuron library optimized for CPU cache challenges PyTorch](https://www.reddit.com/r/MachineLearning/comments/1trq5o3/event_like_spiking_neuron_lib_that_fits_into_the/) ⭐️ 6.0/10
-
-A developer released a spiking neuron library (NeuronGuard) designed to fit entirely in CPU cache and benchmarked it against PyTorch on a Wikipedia dataset for classification. This library could enable extremely efficient inference on CPUs, potentially reducing latency and energy consumption for edge or real-time applications where GPU access is limited. The library was built with heavy use of Gemini Flash 3.5 and the benchmark code and model are available on Hugging Face. No specific performance numbers or architectural details were disclosed in the post.
-
-reddit · r/MachineLearning · /u/Logical_Prompt_3543 · May 30, 04:51
-
-**Background**: Spiking neural networks (SNNs) are biologically inspired models that communicate via discrete spikes rather than continuous activations, which can be more energy-efficient on specialized hardware. Fitting a model entirely in CPU cache eliminates slower main memory access, drastically speeding up inference. Traditional frameworks like PyTorch are not optimized for this approach, so a purpose-built library could offer significant advantages.
-
-<details><summary>References</summary>
-<ul>
-<li><a href="https://en.wikipedia.org/wiki/Spiking_neural_network">Spiking neural network</a></li>
-<li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/ai-inference-acceleration-on-intel-cpus.html">AI Inference Acceleration on CPUs - Intel</a></li>
-
-</ul>
-</details>
-
-**Tags**: `#spiking neural networks`, `#efficient inference`, `#CPU optimization`, `#machine learning`, `#PyTorch benchmark`
+**Tags**: `#CVPR`, `#conference planning`, `#web app`, `#tools`
 
 ---
