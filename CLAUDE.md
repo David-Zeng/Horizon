@@ -1,4 +1,8 @@
-# AGENTS.md — Horizon
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# Horizon
 
 AI-driven information aggregation: fetch news from RSS, HN, Reddit, Telegram, Twitter, GitHub → AI score/filter/enrich → Markdown briefing → GitHub Pages, email, webhook, MCP.
 
