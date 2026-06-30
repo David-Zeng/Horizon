@@ -515,6 +515,191 @@ flowchart TD
 
 If revisited, hardcoded owner references that would need updating: `docs/_config.yml` (`url:`/`baseurl:`), `AGENTS.md`, `CLAUDE.md`, `docs/pi-daily-run.md`, `docs/rpi-docker.md`, `scripts/run-and-deploy.sh` — all currently reference `david-zeng.github.io`/`David-Zeng/Horizon`. Also re-check GitHub Actions secrets (zero configured today per the earlier audit) and `pi-deploy.sh`'s `HORIZON_FORK` safety-check env var.
 
+## What the output actually looks like
+
+A mock-up of one digest, built in the exact format Horizon already produces (real example: `docs/_posts/2026-05-31-summary-en.md` — same front matter, overview line, numbered ranked list, then per-item sections with `source · author · time` byline, **Background**, optional `<details>` references, optional **Discussion**, **Tags**). Only the *content* changes — title front matter, item count, and the mix of sources reflected in the bylines (`asic` · `asx-announcements` · `openbb` · `afr` · `rba` · `polymarket` · `rss` instead of `hackernews` · `reddit`). This is illustrative, not real output — it shows the shape, not actual figures.
+
+```markdown
+---
+layout: default
+title: "Horizon CFD Summary: 2026-06-30 (EN)"
+date: 2026-06-30
+lang: en
+---
+
+> From 38 items, 12 important content pieces were selected
+---
+1. [ASIC issues product intervention order on retail CFD leverage limits](#item-1) ⭐️ 9.0/10
+2. [RBA holds cash rate at 4.10%, signals August review](#item-2) ⭐️ 9.0/10
+3. [AUD/USD slides below 0.6450 as US dollar strengthens on CPI print](#item-3) ⭐️ 8.5/10
+4. [Gold hits 3-week high above US$2,430/oz on safe-haven demand](#item-4) ⭐️ 8.0/10
+5. [BHP shares fall 3% after iron ore guidance cut](#item-5) ⭐️ 8.0/10
+6. [AFR: APRA flags capital buffer review for non-bank lenders](#item-6) ⭐️ 8.0/10
+7. [Brent crude rises on OPEC+ supply cut extension](#item-7) ⭐️ 7.5/10
+8. [ASX 200 closes flat as miners offset bank gains](#item-8) ⭐️ 7.0/10
+9. [Polymarket: odds of August RBA rate cut jump to 61%](#item-9) ⭐️ 7.0/10
+10. [Silver breaks US$30/oz, industrial demand cited](#item-10) ⭐️ 7.0/10
+11. [CBA reports record Q3 home loan volume](#item-11) ⭐️ 6.5/10
+12. [ASIC bans former adviser over CFD mis-selling](#item-12) ⭐️ 6.0/10
+---
+<a id="item-1"></a>
+## [ASIC issues product intervention order on retail CFD leverage limits](https://asic.gov.au/about-asic/news-centre/find-a-media-release/2026-releases/26-xxxmr-cfd-leverage-order/) ⭐️ 9.0/10
+ASIC announced a renewed product intervention order tightening leverage caps for retail CFD issuers, citing continued evidence of rapid retail losses. The order extends existing 2021 leverage ratio restrictions (30:1 major FX down to 2:1 crypto-assets) for a further five years and adds new disclosure requirements for negative balance protection. This directly affects every CFD broker operating in the Sydney market and is the single highest-impact regulatory item this period for anyone trading or issuing local CFD products.
+asic · ASIC Media · Jun 30, 09:12
+**Background**: ASIC's product intervention power (s1023D Corporations Act) has been used against retail CFDs since 2021. This is the first renewal decision since then, following a public consultation that closed in March.
+**Tags**: `#ASIC`, `#regulatory`, `#CFD`, `#leverage`, `#product-intervention`
+---
+<a id="item-2"></a>
+## [RBA holds cash rate at 4.10%, signals August review](https://www.rba.gov.au/media-releases/2026/mr-26-12.html) ⭐️ 9.0/10
+The Reserve Bank of Australia held the cash rate steady at its June meeting, in line with market expectations, but the accompanying statement softened language on inflation persistence, raising the odds of a cut at the August meeting. AUD CFD and forex traders should watch the August 5 meeting closely given the shift in forward guidance.
+rba · RBA Media · Jun 30, 14:35
+**Background**: The cash rate has been held at 4.10% since February. Markets had priced roughly a 35% chance of a hold-with-dovish-tilt outcome going into this meeting.
+**Tags**: `#RBA`, `#interest-rates`, `#AUD`, `#monetary-policy`
+---
+<a id="item-3"></a>
+## [AUD/USD slides below 0.6450 as US dollar strengthens on CPI print](https://www.afr.com/markets/currencies/aud-usd-falls-on-us-cpi-20260630-xxxxx) ⭐️ 8.5/10
+*(AFR, subscriber content — full text via paid-source pipeline)* The Australian dollar fell to a five-week low against the US dollar after a hotter-than-expected US CPI print reduced the odds of near-term Fed rate cuts. AFR's markets desk notes this is the third consecutive session of AUD weakness, with technical support now being tested near 0.6400 — a level relevant to forex-CFD stop placement.
+afr · AFR Markets Desk · Jun 30, 11:48
+**Background**: AUD/USD had been range-bound between 0.6450-0.6600 for most of June prior to this move.
+**Tags**: `#AUDUSD`, `#forex-cfd`, `#afr`, `#paid-source`
+---
+<a id="item-4"></a>
+## [Gold hits 3-week high above US$2,430/oz on safe-haven demand](https://www.investing.com/commodities/gold-news) ⭐️ 8.0/10
+Spot gold climbed to a three-week high as escalating Middle East tensions drove safe-haven flows, with CFD volumes on gold spiking in early Asian trade. Silver and platinum also gained, though gold remains the dominant commodity-CFD instrument by retail volume locally.
+rss · Investing.com Commodities · Jun 30, 06:20
+**Background**: Gold has traded in a US$2,350-2,420 range since mid-May; this is the first close above US$2,430 since early June.
+**Tags**: `#gold`, `#commodities-metals`, `#safe-haven`, `#CFD`
+---
+<a id="item-5"></a>
+## [BHP shares fall 3% after iron ore guidance cut](https://simplywall.st/stocks/au/materials/asx-bhp/bhp-group) ⭐️ 8.0/10
+BHP shares fell sharply after the company trimmed FY26 iron ore production guidance, citing weather disruption at Pilbara operations. As the largest-weighted ASX CFD instrument by retail trading volume, BHP moves are disproportionately relevant to the local CFD market regardless of broader index direction.
+openbb · yfinance · Jun 30, 10:05
+**Background**: BHP is the largest constituent of the ASX 200 materials sector and one of the most heavily CFD-traded local equities.
+**Tags**: `#BHP`, `#ASX`, `#iron-ore`, `#equities-cfd`
+---
+<a id="item-6"></a>
+## [AFR: APRA flags capital buffer review for non-bank lenders](https://www.afr.com/companies/financial-services/apra-non-bank-capital-20260629-xxxxx) ⭐️ 8.0/10
+*(AFR, subscriber content)* APRA signalled a review of capital buffer requirements for non-bank lenders amid rising mortgage arrears, a regulatory development distinct from but adjacent to ASIC's CFD-specific actions — relevant for traders watching financial-sector CFDs and ASX-listed lenders.
+afr · AFR Regulatory · Jun 29, 16:50
+**Background**: APRA regulates prudential standards separately from ASIC's market-conduct remit; the two bodies' actions are often conflated but cover different risk categories.
+**Tags**: `#APRA`, `#regulatory`, `#non-bank-lending`, `#afr`, `#paid-source`
+---
+<a id="item-7"></a>
+## [Brent crude rises on OPEC+ supply cut extension](https://oilprice.com/Energy/Crude-Oil/) ⭐️ 7.5/10
+Brent crude rose over 2% after OPEC+ confirmed an extension of voluntary supply cuts through Q3, lifting energy-CFD instruments broadly. WTI followed with a smaller gain given divergent US inventory data released the same day.
+rss · OilPrice.com · Jun 30, 03:15
+**Background**: OPEC+ had been expected to taper cuts gradually; this extension surprised markets pricing a partial unwind.
+**Tags**: `#oil`, `#commodities-energy`, `#OPEC`, `#CFD`
+---
+<a id="item-8"></a>
+## [ASX 200 closes flat as miners offset bank gains](https://www.marketindex.com.au/asx200) ⭐️ 7.0/10
+The ASX 200 closed roughly unchanged as weakness in materials (tracking the BHP guidance cut) offset gains in the financial sector following stronger-than-expected bank earnings updates.
+rss · Market Index · Jun 30, 16:15
+**Background**: The ASX 200 has been range-bound between 8,100-8,300 for the past two weeks.
+**Tags**: `#ASX200`, `#indices-cfd`, `#market-wrap`
+---
+<a id="item-9"></a>
+## [Polymarket: odds of August RBA rate cut jump to 61%](https://polymarket.com/event/rba-august-decision) ⭐️ 7.0/10
+Prediction-market odds for an August RBA rate cut rose sharply following the softer language in today's RBA statement, up from 38% a week ago. This is a leading sentiment indicator, not a news event — included as alt-data context for traders positioning ahead of the August 5 decision rather than as a standalone story.
+polymarket · Gamma API snapshot · Jun 30, 15:02
+**Background**: Polymarket odds are continuously updated; this figure is a snapshot at fetch time, not a fixed historical fact like a news article.
+**Tags**: `#polymarket`, `#alt-data`, `#RBA`, `#prediction-market`
+---
+<a id="item-10"></a>
+## [Silver breaks US$30/oz, industrial demand cited](https://www.kitco.com/news/) ⭐️ 7.0/10
+Silver crossed US$30/oz for the first time this quarter, with analysts citing strong industrial/solar-panel demand alongside the broader precious-metals safe-haven bid.
+rss · Kitco News · Jun 30, 05:40
+**Background**: Silver had underperformed gold for most of 2026 before this catch-up move.
+**Tags**: `#silver`, `#commodities-metals`, `#industrial-demand`
+---
+<a id="item-11"></a>
+## [CBA reports record Q3 home loan volume](https://www.commbank.com.au/articles/newsroom/) ⭐️ 6.5/10
+Commonwealth Bank reported record quarterly home loan settlements, beating analyst expectations and lifting financial-sector sentiment on the ASX.
+openbb · yfinance · Jun 30, 09:50
+**Background**: CBA is the largest ASX-listed bank by market cap and a heavily CFD-traded financial instrument.
+**Tags**: `#CBA`, `#ASX`, `#banking`, `#equities-cfd`
+---
+<a id="item-12"></a>
+## [ASIC bans former adviser over CFD mis-selling](https://asic.gov.au/about-asic/news-centre/find-a-media-release/2026-releases/26-xxxmr-adviser-ban/) ⭐️ 6.0/10
+ASIC permanently banned a former financial adviser for mis-selling high-leverage CFD products to retail clients without adequate risk disclosure — a smaller enforcement action than item 1, but part of the same regulatory pattern worth tracking for compliance-relevant CFD news.
+asic · ASIC Media · Jun 30, 08:30
+**Background**: This is an individual enforcement action under ASIC's banking and finance conduct powers, separate from the broader product intervention order in item 1.
+**Tags**: `#ASIC`, `#enforcement`, `#CFD`, `#regulatory`
+---
+```
+
+Notable shifts from the current AI/tech format, visible directly in the mock-up above:
+
+- **Bylines carry the new source mix**: `asic`, `rba`, `afr`, `openbb`, `polymarket` alongside the existing `rss` — replacing `hackernews`/`reddit`/`github` as the dominant attributions.
+- **Paid-source items are flagged inline** (`*(AFR, subscriber content...)*` prefix, `#afr`/`#paid-source` tags) so a reader can tell at a glance which items came through the Path A/B/C paid pipeline versus free sources — this convention doesn't exist today and would need adding to the summarizer prompt.
+- **Regulatory items rank highest** (ASIC, RBA at 9.0) — reflecting `prompts.py`'s rewritten scoring criteria favoring regulatory/rate-decision impact over the current AI/tech "interesting to engineers" framing.
+- **Polymarket items read differently in kind** — phrased as a snapshot ("odds rose to 61% as of fetch time") rather than a discrete event, with an explicit note in the Background field flagging it as time-sensitive alt-data, not a fixed historical fact — the schema/semantic mismatch flagged earlier in this document, handled here at the prompt/template level rather than a data model change.
+- **No HN-style Discussion section** for most items, since most CFD-relevant sources (ASIC, RBA, AFR, OpenBB) don't have a comment-thread equivalent — only RSS/Reddit-style sources would retain that field; it would simply be omitted (as already happens for `rss`-sourced items in the current format, see item 8 above in the real example).
+- **Item volume composition differs**: where the current digest is HN/Reddit-heavy with a long tail of lower-scored general-tech items, a CFD digest skews toward fewer, higher-average-score items (more 7s and 8s, fewer 5s/6s) because regulatory and rate-decision news is inherently higher-signal and lower-volume than general tech discussion — `filtering.ai_score_threshold` may need recalibrating (currently 6.0/7.0 across the two example configs) once real scoring data exists.
+
+## Self-improve module: a source-gap discovery process
+
+A separate, manually-triggered audit that asks "are we missing a source that's now worth adding?" — distinct from the daily pipeline run, and read-only (it reports gaps, it does not edit `config.json` itself).
+
+**Why this earns its own module rather than living in the daily run**: the daily pipeline answers "what happened in the last 24h from known sources." This answers a slower-moving question — "has the *source list itself* gone stale" — which only needs checking occasionally (weekly/monthly), not on every cron tick, and produces a judgment call for a human, not content for the digest.
+
+**Reuses existing building blocks rather than adding new ones**: the same `ddgs` (DuckDuckGo) web-search call already used in `src/ai/enricher.py` for grounding background knowledge, and the same `AIClient.complete()` JSON-response pattern already used for scoring/enrichment. No new dependency, no new AI-provider wiring.
+
+```mermaid
+flowchart TD
+    trigger["Manually run: uv run horizon-discover, or an MCP tool hz_discover_sources"]
+    loadconfig["Load current data/config.json, describe configured sources as a flat list"]
+    queries["Run a fixed set of search queries: ASIC media releases RSS, AFR markets RSS, Sydney CFD broker news, RBA statements feed, commodities-metals RSS, etc."]
+    search["Web search each query via ddgs, same call already used in enricher.py"]
+    askai["Feed search results plus the configured-sources list to the AI client, ask it to flag genuine gaps only"]
+    filterknown["AI is instructed to skip anything already represented in the configured list, judged by publisher name not just category"]
+    report["Render a gap report: candidate name, why it's a gap, suggested URL, source_type, category, confidence"]
+    human["Human reviews the report and manually adds anything worth keeping to config.json"]
+
+    trigger --> loadconfig
+    loadconfig --> queries
+    queries --> search
+    search --> askai
+    loadconfig --> askai
+    askai --> filterknown
+    filterknown --> report
+    report --> human
+
+    style trigger fill:#4a90d9,color:#ffffff
+    style loadconfig fill:#50b060,color:#ffffff
+    style queries fill:#50b060,color:#ffffff
+    style search fill:#9060c0,color:#ffffff
+    style askai fill:#9060c0,color:#ffffff
+    style filterknown fill:#9060c0,color:#ffffff
+    style report fill:#c05050,color:#ffffff
+    style human fill:#e0a030,color:#212121
+```
+
+**Shape of the output** — a per-query report, e.g.:
+
+```text
+Query: "ASIC media release RSS feed"
+  [HIGH] ASIC Media Releases — no RSS source currently configured for ASIC
+         enforcement/regulatory announcements; this is the gap the whole
+         regulatory-tracking goal depends on.
+         suggested: https://asic.gov.au/about-asic/news-centre/...
+         type: rss, category: regulatory-asic
+
+Query: "Sydney CFD broker market commentary"
+  [MEDIUM] IG Australia market analysis blog — CFD-specific commentary,
+           not currently covered; has an RSS feed.
+           type: rss, category: cfd-commentary
+  notes: "Several results were broker marketing content, not news — excluded."
+```
+
+**Scoped deliberately narrow for a first version** (per the decisions made when this was designed): audits coverage gaps only — it does not also score whether *existing* sources are still pulling their weight, and it does not auto-generate a config diff. Both are natural follow-ups once the basic gap report proves useful, but starting narrower keeps the first version reviewable. Triggering is manual (a CLI/MCP command run on demand), not wired into the daily Pi cron — so it has zero effect on the live production path until you decide it's worth scheduling.
+
+**What this would touch when actually implemented** (not done — design only, consistent with the rest of this document):
+
+- A new `src/discovery/` module with a `SourceGapFinder` class, following the same constructor-takes-`AIClient` pattern as `ContentAnalyzer`/`ContentEnricher`.
+- Two new prompt constants in `src/ai/prompts.py` (`SOURCE_GAP_SYSTEM`/`SOURCE_GAP_USER`), following the existing system/user-prompt-pair convention.
+- A new CLI entry point (`horizon-discover` in `pyproject.toml`'s `[project.scripts]`, mirroring `horizon-webhook`'s `src.services.webhook_cli:main` pattern) or an MCP tool (`hz_discover_sources` in `src/mcp/server.py`, alongside the existing `hz_*` staged-pipeline tools) — either fits the existing entry-point conventions equally well; worth picking based on whether this gets run from a terminal or from an MCP-connected assistant day to day.
+
 ## Open questions to resolve before implementation
 
 - Which paid subscriptions are you actually willing to pay for? This determines whether step 3 is in scope at all.
