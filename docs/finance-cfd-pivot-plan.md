@@ -86,15 +86,17 @@ flowchart LR
 
 |Scraper|Change needed|Notes|
 |-|-|-|
-|`gdelt`|`query` → `"ASIC CFD"`, `"ASX"`, `"RBA interest rate"`, `"AUD forex"`, `"gold price"`, `"silver price"`, `"oil price WTI Brent"` (run as multiple configured queries if the scraper supports repeated source entries — check `models.py:280` cardinality)|Best existing lever for macro/regulatory event coverage; GDELT indexes global news including AU regulatory press and commodity markets|
+|`gdelt`|`query` → `"ASIC CFD"`, `"ASX"`, `"RBA interest rate"`, `"AUD forex"`, `"gold price"`, `"silver price"`, `"oil price WTI Brent"`|Best existing lever for macro/regulatory event coverage; GDELT indexes global news including AU regulatory press and commodity markets. **Single-query limitation:** `GDELTConfig` (`models.py:269-286`) holds one `query: str`, and `SourcesConfig.gdelt` is `Optional[GDELTConfig]` (line 317), not a list — the orchestrator instantiates exactly one `GDELTScraper` (`orchestrator.py:307`). Multiple queries therefore require either (a) a single compound query string (quick path, no code change, but GDELT's boolean syntax has complexity limits), or (b) changing `sources.gdelt` to `List[GDELTConfig]` in `models.py` + looping in `orchestrator.py` (small code change, cleanest result). Decide before the config-only pilot — see Code changes below|
 |`google_news`|`query` → `"CFD trading Australia"`, `"ASIC margin rules"`, `"ASX 200"`, `"gold silver spot price"`, `"crude oil OPEC"`; `country: "AU"`, `ceid` set to AU/en|Mainstream financial journalism, config-only|
 |`rss`|Replace existing tech feeds with AU financial + commodity RSS (see below)|Zero code change — just new feed entries|
-|`reddit`|Swap `MachineLearning` etc. for `r/ASX_Bets`, `r/AusFinance`, `r/Forex`, `r/Gold`, `r/Silverbugs`, `r/Commodities`|Caution: signal-to-noise on retail trading subs is lower than tech subs; tune `min_score` up|
+|`reddit`|Swap `MachineLearning` etc. for `r/ASX_Bets`, `r/AusFinance`, `r/Forex`, `r/Gold`, `r/Silverbugs`, `r/Commodities`|**Signal-to-noise is materially worse than tech subs** — `r/ASX_Bets` is meme-heavy; high-engagement posts are often jokes, not analysis, and native analysis posts rarely break 50 upvotes. The default `min_score: 10` (`config.example.json:66`) will flood the pipeline with noise that burns AI scoring tokens on memes. Recommended starting values: `min_score: 100`, `fetch_limit: 5` for `r/ASX_Bets`; `min_score: 50` for `r/AusFinance`/`r/Forex`/`r/Gold`. Treat Reddit as a tertiary canary (crossposted announcements already covered by RSS), not a primary source|
 |`openbb`|Repoint `watchlists[].symbols` to ASX-listed tickers / AUD pairs / metals-and-energy proxy tickers (e.g. `GC=F`, `SI=F`, `CL=F` if `news.company()` accepts futures symbols) if accepted (needs empirical check — see Gaps)|Still equity-news-shaped; see code changes below for real CFD coverage|
 |`twitter`|Swap handles to AU finance commentators/ASIC/RBA accounts, plus commodity-desk analysts, if Twitter scraper is enabled|Optional, lower priority|
 |`github`, `hackernews`, `ossinsight`|Disable|No finance angle; HN is structurally tech-biased and can't be retargeted|
 
 ### New RSS sources to add (free, config-only)
+
+**Token-cost note:** the current pipeline processes ~20-40 items/day (the 2026-05-31 example shows 21 fetched, 14 above threshold). The new source mix (GDELT at up to 75 records + Google News at up to 100 + RSS + Reddit + OpenBB + ASIC) could produce 200-400 items/day before scoring. At `analysis_concurrency: 1` with DeepSeek (~$0.14/M input, ~$0.28/M output), a rough budget: 200 items × ~3K tokens (analysis + enrichment for top N) ≈ 600K tokens/day ≈ $0.10-0.15/day — affordable, but the enrichment pass (2nd AI call with DuckDuckGo web-search context for top-scored items) is the expensive step and scales with `ai_score_threshold` (lower threshold → more items enriched → higher cost). Worth checking the actual item volume after step 1 before assuming the budget holds. If volume is higher than expected, consider raising the threshold or capping enrichment to the top 15-20 items.
 
 These are standard AU financial RSS feeds — add as new entries under `sources.rss` in config, no code change:
 
@@ -142,13 +144,14 @@ Financial-review outlets (AFR, The Australian) are the hardest paid category to 
 
 ### Prediction markets (Polymarket and similar) as alt-data
 
-Polymarket is a strong candidate for this pipeline specifically because, unlike most of the paid sources above, it's genuinely **free and keyless** — making it a faster win than anything on the paid list, even though it surfaced in a discussion about paid context.
+Polymarket is a candidate for this pipeline specifically because, unlike most of the paid sources above, it's genuinely **free and keyless** — making it a faster win than anything on the paid list *on the access dimension*, though the data-shape work (below) means it's not a zero-effort addition. It belongs in a later phase (step 7 of the phased order), not the config-only pilot.
 
 - **Access**: Polymarket's Gamma API (market metadata, descriptions, categories) and CLOB API (live order-book prices, i.e. the market's implied probability) are both public REST endpoints with no API key required for read access — this is closer to Path A than even the `LWN_KEY` RSS case, since there's no credential-management step at all. A new `src/scrapers/polymarket.py` would follow the `gdelt.py` shape: `httpx.AsyncClient` GET against the public endpoint, map JSON results into `ContentItem`.
 - **Why it's relevant to a CFD/macro briefing**: prediction-market odds are a leading indicator for exactly the events this plan already cares about — RBA rate-decision odds, inflation-print outcome odds, election/geopolitical-event odds that move forex and commodities, even odds on specific regulatory actions if a market exists for them. This is a different *kind* of signal than news (a crowd-sourced probability rather than a reported fact), which is genuinely additive rather than duplicating GDELT/Google News coverage.
-- **Data shape mismatch to plan for**: a Polymarket market is fundamentally a "current probability for outcome X" snapshot, not a discrete news event with a single `published_at`. Mapping it into `ContentItem` means treating each fetch as a new "item" representing the market's state at fetch time (title = market question, content = current odds/volume/recent movement, `published_at` = fetch time or last-trade time) — similar in spirit to the alt-data sentiment-feed mismatch noted above, and likely wants its own `metadata` convention (e.g. `probability`, `volume_24h`, `price_change`) rather than reusing news-style fields. Worth deciding whether "odds moved significantly" (a delta) is more useful to surface than "current odds" (a snapshot) — the former needs the scraper to persist the previous reading and diff against it, which is new state-tracking the rest of the pipeline doesn't currently do (`StorageManager` tracks seen items for dedup, not numeric time series).
+- **Data shape mismatch to plan for**: a Polymarket market is fundamentally a "current probability for outcome X" snapshot, not a discrete news event with a single `published_at`. Mapping it into `ContentItem` means treating each fetch as a new "item" representing the market's state at fetch time (title = market question, content = current odds/volume/recent movement, `published_at` = fetch time or last-trade time) — similar in spirit to the alt-data sentiment-feed mismatch noted above, and likely wants its own `metadata` convention (e.g. `probability`, `volume_24h`, `price_change`) rather than reusing news-style fields. **v1 should be snapshots-only** (current odds at fetch time). "Odds moved significantly" (a delta) is more useful to surface than a raw snapshot, but requires the scraper to persist the previous reading and diff against it — new state-tracking the rest of the pipeline doesn't currently do (`StorageManager` tracks seen items for dedup, not numeric time series). Defer delta detection to v2; a snapshot-only v1 is still additive as alt-data context.
 - **Other prediction markets worth the same treatment**: Kalshi (CFTC-regulated, US-based, also has a public API, arguably more relevant for US macro events that move global CFD instruments) and Metaculus (forecasting community, no real-money trading, API-accessible) are structurally similar alt-data candidates if Polymarket proves useful.
 - **Scoring rubric implication**: if this is built, the `prompts.py` rewrite (already planned) should explicitly account for probability-snapshot items reading differently from news items — the AI needs to know "AUD rate-cut odds moved from 40% to 65% overnight" is the kind of signal worth a high score, distinct from how it scores a news article.
+- **Dedup edge case**: a Polymarket snapshot and a news article about the *same event* (e.g. an RBA rate hold) have different URLs and semantically different content (a report of what happened vs. a snapshot of what the market thinks will happen). The AI topic-dedup step (`orchestrator.py:433-504`, prompt at `prompts.py:8-21`) asks the AI to identify "the exact same real-world event" — this may incorrectly merge a news item with its corresponding Polymarket odds item, losing the alt-data signal. Polymarket items should be tagged with a `metadata["item_kind"]: "prediction-snapshot"` flag and **excluded from topic dedup**, or the dedup prompt should be taught to treat prediction-snapshot items as non-duplicate with news items about the same event.
 
 ### Paid-source pipeline in detail: key → fetch → LLM-readable text
 
@@ -219,6 +222,15 @@ Green is what already works unmodified (`rss.py` + `${VAR_NAME}`). Orange/purple
 - Caveat to flag explicitly: AFR's Terms of Use govern automated access to subscriber content distinctly from public pages — this should be read before building Path C for AFR specifically, since "I have a personal subscription" does not automatically mean "scripted scraping of my own paid access is permitted." This is the kind of per-publisher ToS check the sequencing recommendation below calls out.
 
 **Sequencing recommendation:** for each paid source on the candidate list, check Path A then Path B before assuming Path C. Path C should be a last resort — it's the most fragile, the most ToS-sensitive (scraping a logged-in paywalled page is a materially different legal posture than reading public RSS, worth checking each publisher's terms before building), and the most ongoing-maintenance-heavy. It's plausible several "needs research" candidates (Platts, Morningstar, IBISWorld) turn out to be Path A once you actually look at their developer docs, leaving Path C only for outlets that genuinely have no API offering.
+
+### Legal considerations for Path C scraping (read before building)
+
+Path C (authenticated scraping of paywalled publisher content) is the **highest-risk activity in this entire plan** and deserves its own treatment rather than being buried in a worked example. Key points:
+
+- **Personal subscriptions do not automatically grant automated-access rights.** AFR (Nine Entertainment) and The Australian (News Corp AU) have legal departments that actively enforce ToS against commercial scraping. "I have a personal subscription" is not the same as "my subscription permits scripted fetching of subscriber-only content" — most publisher ToS distinguish human reading from automated access explicitly.
+- **Australian copyright law's fair dealing provisions** for news reporting may apply to AI-aggregation use cases, but this is largely untested for LLM-mediated re-summarization of paywalled content. Don't assume fair dealing covers this without a legal opinion.
+- **The legal posture differs by path**: Path A (licensed API, you pay for structured access) and Path B (key-gated RSS, the publisher designed this access method) are publisher-sanctioned. Path C (cookie-scraping a page the publisher did not expose for automation) is not sanctioned, regardless of whether you hold a subscription.
+- **Recommendation**: treat Path C as requiring an explicit per-publisher ToS review *before* building, not after. If a publisher's ToS prohibits automated access, accept headline-only RSS (Path B if available, else the free teaser) rather than building a scraper. The digest is still useful with headline-only items for paywalled sources — the AI can enrich them via web search (the existing `enricher.py` DuckDuckGo path) without needing the full subscriber text.
 
 ### New scraper code needed
 
@@ -314,9 +326,9 @@ Whether ASIC needs this custom scraper at all depends on the open question below
 
 No new server is needed — OpenBB is a local Python SDK, not a hosted service — but the **current production image does not have it installed**, confirmed by reading the live deployment files:
 
-- `docker-compose.rpi.yml:18` builds from `Dockerfile.rpi`, the image actually run daily per `docs/pi-daily-run.md`.
-- `Dockerfile.rpi:9` runs `uv sync --frozen --no-dev` with no `--extra openbb` flag, so the `openbb`/`openbb-benzinga` packages declared in `pyproject.toml`'s optional `openbb` extra are never installed in the image that exists today.
-- `sources.openbb.enabled` is `false` by default in `config.example.json:89`, so even if the package were present, the scraper would no-op per the warning logic in `openbb.py:71-77`.
+- `docker-compose.rpi.yml:19` builds from `Dockerfile.rpi` (the `dockerfile:` ref is line 19; line 18 is `context: .`), the image actually run daily per `docs/pi-daily-run.md`.
+- `Dockerfile.rpi:11` runs `uv sync --frozen --no-dev` with no `--extra openbb` flag, so the `openbb`/`openbb-benzinga` packages declared in `pyproject.toml`'s optional `openbb` extra are never installed in the image that exists today.
+- `sources.openbb.enabled` is `false` by default in `config.example.json:89`, so even if the package were present, the scraper would no-op — the `ImportError` warning at `openbb.py:71-77` fires only for the missing-package case; the disabled-source case returns an empty list silently at `openbb.py:88` (`if not self._obb or not self.openbb_config.enabled: return []`).
 
 So "making OpenBB work" on the Pi is an image-rebuild-and-redeploy, not new infrastructure:
 
@@ -351,9 +363,9 @@ flowchart TD
 
 Concrete steps, in order:
 
-1. **Edit `Dockerfile.rpi`** (on the Pi or pushed via the normal git-pull-then-build flow) — change `RUN uv sync --frozen --no-dev` to `RUN uv sync --frozen --no-dev --extra openbb`. This is the only Dockerfile change needed; everything else is config/env.
+1. **Edit `Dockerfile.rpi`** (on the Pi or pushed via the normal git-pull-then-build flow) — change `RUN uv sync --frozen --no-dev` (line 11) to `RUN uv sync --frozen --no-dev --extra openbb`. This is the only Dockerfile change needed; everything else is config/env.
 2. **Pick a provider.** `yfinance` (the `config.example.json` default) needs no API key and is the lowest-friction way to confirm the pipeline works end-to-end before paying for anything. Upgrading to FMP/Benzinga/Polygon for better news coverage (or later, the planned `obb.currency`/`obb.commodity`/`obb.economy.calendar` extensions) is a config + key change, not another image rebuild, provided the package is already installed.
-3. **Add the provider's API key to the Pi's `.env`** (same file already holding `DEEPSEEK_API_KEY` etc. per `docs/pi-daily-run.md`) — OpenBB's SDK reads its own credentials from environment variables independently of Horizon's `${VAR_NAME}` config expansion, so the env var name must match what OpenBB itself expects for that provider.
+3. **Add the provider's API key to the Pi's `.env`** (the same file already holding AI provider keys per `docs/pi-daily-run.md:64`, which describes it generically as "API keys (AI provider, etc.) live in a `.env` file on the Pi's filesystem" — the `DEEPSEEK_API_KEY` name specifically appears in `docs/rpi-docker.md` and `docs/configuration.md`, not `pi-daily-run.md`) — OpenBB's SDK reads its own credentials from environment variables independently of Horizon's `${VAR_NAME}` config expansion, so the env var name must match what OpenBB itself expects for that provider.
 4. **Flip `sources.openbb.enabled` to `true`** in the Pi's `data/config.json` (not `config.example.json` — that file is gitignored and lives only on the Pi) and define at least one watchlist with real symbols.
 5. **Rebuild the image**: `docker compose -f docker-compose.rpi.yml build` (one-time after the Dockerfile edit; not needed again until the Dockerfile changes further).
 6. **Manual test run** before trusting the cron job: `docker compose -f docker-compose.rpi.yml run --rm horizon --hours 24`, then check `docs/_posts` and `logs/cron.log` for OpenBB items or the "package not installed"/empty-watchlist warnings from `openbb.py`.
@@ -376,6 +388,8 @@ Current `CONTENT_ANALYSIS_SYSTEM` (lines 23-60) scores for "software engineering
 
 Also update `CONTENT_ENRICHMENT_SYSTEM` (lines 102-138) and `CONCEPT_EXTRACTION_SYSTEM` (lines 84-88) — both currently frame output for a "technically-minded reader" / "technical concepts." Reframe for a financially-literate reader needing concepts like margin, leverage, basis points, spread explained instead.
 
+**Language decision (en/zh):** the current pipeline produces bilingual output — `CONTENT_ENRICHMENT_SYSTEM` requires both `*_en` and `*_zh` fields regardless of `config.ai.languages` (which defaults to `["en"]` only in `config.example.json`). The mock-up below is English-only. Decide explicitly before the prompt rewrite: if zh is dropped (likely, since CFD sources are predominantly English — ASIC, RBA, AFR, ASX), simplify `CONTENT_ENRICHMENT_SYSTEM` to single-language and save ~50% of enrichment tokens. If zh is kept (Chinese-language CFD traders in Sydney exist), the mock-up should show it and the enrichment prompt stays bilingual. This is a one-line prompt change either way but affects every enrichment call's token cost.
+
 ### 2. `src/setup/wizard.py` — close the source-type gap (optional, only if using the interactive wizard)
 
 `build_config()` (lines 191-291) has no branch for `openbb`/`ossinsight`/`gdelt`/`google_news`. If hand-editing `config.json` directly, this can be skipped. If you want `horizon-wizard` to support finance setup end-to-end, add the missing `elif` branches.
@@ -388,47 +402,66 @@ Add methods for forex/commodity/economic-calendar OpenBB calls; extend `OpenBBCo
 
 Follow the `gdelt.py`/`google_news.py` pattern: async fetch, parse into `ContentItem`, register in `orchestrator.py` and `models.py` (new `ASICConfig`).
 
+### 5. `src/models.py` + `src/orchestrator.py` — support multiple GDELT queries (if compound-query string proves insufficient)
+
+If a single GDELT compound query can't cover the full topic spread cleanly (ASIC + ASX + RBA + AUD + gold + silver + oil), change `SourcesConfig.gdelt: Optional[GDELTConfig]` → `Optional[List[GDELTConfig]]` (line 317) and loop over configs in `orchestrator.py:307` where `GDELTScraper` is instantiated. This is the cleanest path to running the 7 distinct queries listed in the source table as separate fetches with their own `category` tags. Try the compound-string path first — only make this change if boolean-query complexity limits bite.
+
 ## Known architecture gap (flagged, not addressed by this plan)
 
-The pipeline is a **digest tool** — batch fetch → AI score → daily Markdown — not a real-time feed. `ContentItem` has no price/quote fields, and there's no streaming output path. This plan deliberately stays within the digest model: regulatory changes and market-moving *news* fit it well, but live price/spread data does not. If real-time price action turns out to be a hard requirement, that's a separate, much larger architectural project (new data model, new output cadence) and is out of scope here unless you decide otherwise.
+The pipeline is a **digest tool** — batch fetch → AI score → daily Markdown — not a real-time feed. `ContentItem` has no price/quote fields, and there's no streaming output path. This plan deliberately stays within the digest model: regulatory changes and market-moving *news* fit it well, but live price/spread data does not. Concretely, this is a **pre-market briefing** (the 6 AM Sydney cron catches overnight US/Europe action plus the prior day's ASX/ASIC releases), not an intraday alert system — if real-time price action or intraday regulatory alerts turn out to be a hard requirement, that's a separate, much larger architectural project (new data model, new output cadence, push-notification layer) and is out of scope here unless you decide otherwise.
+
+## Operational monitoring (silent-failure risk)
+
+The plan covers the happy path (Pi cron → Docker → pipeline → webhook/email) but a silent failure leaves the user with no digest and no alert. Failure modes the existing pipeline doesn't notify on:
+
+- **Container fails to start** (image corruption, Docker daemon down, disk full) — the orchestrator's webhook-failure notification (`orchestrator.py:231-237`) only fires if the orchestrator catches an exception *inside* a running container; if the container never starts, nothing notifies anyone.
+- **Network down on the Pi** — no fetch, no webhook send, no alert.
+- **AI provider API key expired** — fetch succeeds, scoring fails, partial or empty digest.
+- **Webhook URL rotated/expired** — pipeline runs, digest generated, delivery silently dropped.
+
+**Recommended dead-man's-switch** (lightweight, no new dependency): a separate cron entry on the Pi that runs *after* the Horizon cron (e.g. 7 AM) and checks whether `docs/_posts/` contains a file dated today. If not, it sends a direct alert (a separate webhook call, or an `logger.error` to a monitored log, or a simple email via the existing `EmailManager`). This catches container-start failures and pipeline crashes that the in-process webhook handler can't. At minimum, document the expectation that the user verifies the digest arrived each morning until a healthcheck is in place.
 
 ## Phased implementation order (for when you're ready to build)
 
-1. **Config-only pilot** — new `data/config.json`: retarget `gdelt`/`google_news` queries, add AU financial RSS feeds, disable `hackernews`/`ossinsight`/`github`. Run with the *existing* (unmodified) AI prompts first to get a baseline of how badly the tech-rubric mis-scores finance content.
-2. **Rewrite `prompts.py`** per above — highest leverage on output quality. Re-run, compare.
-3. **Research and wire up paid sources** the user is willing to subscribe to (AFR, etc.) using the `${VAR_NAME}` env-expansion pattern where the source supports key-based full-text access.
-4. **Build `asic.py`** scraper for regulatory tracking if RSS isn't sufficient.
-5. **Extend `openbb.py`** for forex/commodities/economic-calendar once the equity-news-only baseline proves too narrow.
-6. **Patch `wizard.py`** only if interactive setup support is wanted.
+1. **Config-only pilot** — new `data/config.json`: retarget `gdelt`/`google_news` queries, add AU financial RSS feeds, disable `hackernews`/`ossinsight`/`github`. Run once with the *existing* (unmodified) AI prompts — but only to confirm items actually fetch and the source mix returns volume (ignore the scores, which will be wrong). Don't preserve this as a baseline artifact; the tech rubric will score ASIC announcements 0-2 and that failure mode is evident from reading `prompts.py:23-60` without running it.
+2. **Rewrite `prompts.py`** per above — highest leverage on output quality. Re-run the same window immediately and compare.
+3. **Calibrate `ai_score_threshold`** — the old 6.0/7.0 thresholds are invalid the moment the rubric changes (a 7.0 under the CFD rubric is not comparable to a 7.0 under the tech rubric). Methodology: run the rewritten prompts on a representative 24h window, observe the score distribution across all fetched items, set the threshold to capture the desired digest size (e.g. top 10-15 items, or the score at which item count plateaus). Re-check after any subsequent rubric edit.
+4. **Research and wire up paid sources** the user is willing to subscribe to (AFR, etc.) using the `${VAR_NAME}` env-expansion pattern where the source supports key-based full-text access. Note: this step can stall (subscription decisions are a blocker) — steps 5-7 can proceed in parallel once step 2 is done; step 4 only gates *those specific paid sources* in the output, not the entire digest.
+5. **Build `asic.py`** scraper for regulatory tracking if RSS isn't sufficient.
+6. **Extend `openbb.py`** for forex/commodities/economic-calendar once the equity-news-only baseline proves too narrow.
+7. **Polymarket alt-data (snapshots-only v1)** — see the Polymarket subsection: a v1 snapshot scraper (current odds at fetch time, no delta detection) is a reasonable later-phase addition. Delta detection ("odds moved significantly") requires persisting prior readings — new state-tracking `StorageManager` doesn't currently do — and is scope creep for v1; defer.
+8. **Patch `wizard.py`** only if interactive setup support is wanted.
 
 ```mermaid
 flowchart TD
-    pilot["Step 1, config-only pilot, retarget GDELT and Google News, add AU and commodity RSS"]
-    baseline["Run with existing tech-rubric prompts to capture a mis-scoring baseline"]
-    rubric["Step 2, rewrite prompts.py scoring rubric for CFD relevance"]
-    compare["Re-run and compare scoring quality against baseline"]
-    paidstep["Step 3, research and wire up paid sources via VAR_NAME expansion"]
-    asicstep["Step 4, build asic.py scraper if RSS coverage is insufficient"]
-    openbbstep["Step 5, extend openbb.py for forex, commodities, economic calendar"]
-    wizardstep["Step 6, patch wizard.py source-type gap, optional"]
+    pilot["Step 1, config-only pilot, retarget GDELT and Google News, add AU and commodity RSS, run once to confirm fetch volume, ignore scores"]
+    rubric["Step 2, rewrite prompts.py scoring rubric for CFD relevance, re-run same window"]
+    calibrate["Step 3, calibrate ai_score_threshold against the new rubric score distribution"]
+    paidstep["Step 4, research and wire up paid sources via VAR_NAME expansion, can stall, does not gate steps 5-7"]
+    asicstep["Step 5, build asic.py scraper if RSS coverage is insufficient"]
+    openbbstep["Step 6, extend openbb.py for forex, commodities, economic calendar"]
+    polymarketstep["Step 7, Polymarket snapshot scraper v1, delta detection deferred"]
+    wizardstep["Step 8, patch wizard.py source-type gap, optional"]
     done["Finance and CFD focused daily digest"]
 
-    pilot --> baseline
-    baseline --> rubric
-    rubric --> compare
-    compare --> paidstep
-    paidstep --> asicstep
-    asicstep --> openbbstep
-    openbbstep --> wizardstep
+    pilot --> rubric
+    rubric --> calibrate
+    calibrate --> paidstep
+    calibrate --> asicstep
+    calibrate --> openbbstep
+    paidstep --> polymarketstep
+    asicstep --> polymarketstep
+    openbbstep --> polymarketstep
+    polymarketstep --> wizardstep
     wizardstep --> done
 
     style pilot fill:#4a90d9,color:#ffffff
-    style baseline fill:#4a90d9,color:#ffffff
     style rubric fill:#50b060,color:#ffffff
-    style compare fill:#50b060,color:#ffffff
+    style calibrate fill:#50b060,color:#ffffff
     style paidstep fill:#e0a030,color:#212121
     style asicstep fill:#9060c0,color:#ffffff
     style openbbstep fill:#9060c0,color:#ffffff
+    style polymarketstep fill:#9060c0,color:#ffffff
     style wizardstep fill:#9060c0,color:#ffffff
     style done fill:#c05050,color:#ffffff
 ```
@@ -474,8 +507,16 @@ flowchart TD
 **Concrete steps:**
 
 1. **Make the repo private now**: GitHub repo Settings → General → Danger Zone → Change visibility → Private. Free, immediate, no plan upgrade required for this step specifically.
-2. **Disable the public output path**: stop `scripts/pi-deploy.sh` from pushing to `gh-pages` (comment out or remove that step from the cron invocation), and/or disable the `deploy-docs.yml` workflow. Leaving old `gh-pages` content in place after the repo goes private is fine — it inherits the repo's new private visibility — but no *new* content should be pushed there if the goal is to stop public accumulation.
-3. **Wire up Teams via webhook** — no code change needed. `WebhookConfig.platform` (`models.py:333`) doesn't have a literal `"teams"` branch, but `platform: "generic"` plus a custom `request_body` template (the same `#{key}`-placeholder mechanism already used for the Feishu example in `config.example.json`) is exactly how to post a Teams Adaptive Card or simple `{"text": "#{summary}"}` payload to a Teams incoming webhook URL. Set `url_env` to an env var holding the Teams webhook URL (kept in `.env` on the Pi, same pattern as other secrets).
+2. **Disable the public output path**: stop `scripts/pi-deploy.sh` from pushing to `gh-pages` (comment out or remove that step from the cron invocation), and/or disable the `deploy-docs.yml` workflow. Leaving old `gh-pages` content in place after the repo goes private is fine — it inherits the repo's new private visibility — but no *new* content should be pushed there if the goal is to stop public accumulation. **Note:** the orchestrator still writes summaries to `docs/_posts/` (`orchestrator.py` writes there via the bind mount in `docker-compose.rpi.yml:23`) regardless of whether `pi-deploy.sh` pushes — so `docs/_posts/` will accumulate on the Pi's disk unbounded without the gh-pages push clearing it. Add a periodic cleanup (e.g. a cron entry or `pi-deploy.sh` step that removes files older than N days) if disk space matters on the Pi.
+3. **Wire up Teams via webhook** — no code change needed. `WebhookConfig.platform` (`models.py:333`) doesn't have a literal `"teams"` branch, but `platform: "generic"` plus a custom `request_body` template (the same `#{key}`-placeholder mechanism already used for the Feishu example — note that example lives in `config.github.json:118` as `platform: "feishu"`; the `config.example.json:148-179` example is Feishu-*shaped* but labeled `platform: "generic"`) is exactly how to post to a Teams incoming webhook URL. **The Feishu interactive-card template will not render on Teams** — Teams expects either a simple `{"text": "..."}` payload or a MessageCard/Adaptive Card schema. Set `url_env` to an env var holding the Teams webhook URL (kept in `.env` on the Pi, same pattern as other secrets). A minimal tested Teams `request_body`:
+   ```json
+   {
+     "text": "#{summary}",
+     "summary": "#{message_title}",
+     "themeColor": "0078D7"
+   }
+   ```
+   For a richer card, use the Teams MessageCard schema (`@type: "MessageCard"`, `sections[]` with `facts` for per-item title/score) — but start with the simple `{"text": ...}` form and confirm it renders before investing in a card layout.
 4. **Optionally also enable email** (`EmailConfig`, already SMTP/IMAP-based) for redundancy or for recipients who prefer inbox delivery over a Teams channel.
 5. **Test before trusting it**: `uv run horizon-webhook` (the CLI entry point already built for exactly this) to send a test payload and confirm Teams renders it correctly, before the first real cron-triggered send.
 6. **Verify the old public surface is actually closed**: load the old Pages URL from a logged-out browser and confirm it 404s (Pages disabled) or requires GitHub login (repo now private) — don't assume either change took effect without checking.
@@ -635,9 +676,11 @@ Notable shifts from the current AI/tech format, visible directly in the mock-up 
 - **Regulatory items rank highest** (ASIC, RBA at 9.0) — reflecting `prompts.py`'s rewritten scoring criteria favoring regulatory/rate-decision impact over the current AI/tech "interesting to engineers" framing.
 - **Polymarket items read differently in kind** — phrased as a snapshot ("odds rose to 61% as of fetch time") rather than a discrete event, with an explicit note in the Background field flagging it as time-sensitive alt-data, not a fixed historical fact — the schema/semantic mismatch flagged earlier in this document, handled here at the prompt/template level rather than a data model change.
 - **No HN-style Discussion section** for most items, since most CFD-relevant sources (ASIC, RBA, AFR, OpenBB) don't have a comment-thread equivalent — only RSS/Reddit-style sources would retain that field; it would simply be omitted (as already happens for `rss`-sourced items in the current format, see item 8 above in the real example).
-- **Item volume composition differs**: where the current digest is HN/Reddit-heavy with a long tail of lower-scored general-tech items, a CFD digest skews toward fewer, higher-average-score items (more 7s and 8s, fewer 5s/6s) because regulatory and rate-decision news is inherently higher-signal and lower-volume than general tech discussion — `filtering.ai_score_threshold` may need recalibrating (currently 6.0/7.0 across the two example configs) once real scoring data exists.
+- **Item volume composition differs**: where the current digest is HN/Reddit-heavy with a long tail of lower-scored general-tech items, a CFD digest skews toward fewer, higher-average-score items (more 7s and 8s, fewer 5s/6s) because regulatory and rate-decision news is inherently higher-signal and lower-volume than general tech discussion — `filtering.ai_score_threshold` (currently 6.0/7.0 across the two example configs) is **invalid the moment the rubric changes** and must be recalibrated per step 3 of the phased order, not reused as-is.
 
-## Self-improve module: a source-gap discovery process
+## Appendix: Self-improve module — a source-gap discovery process
+
+*This is a maintenance tool for the already-pivoted pipeline, not part of the execution critical path. It's documented here for completeness but should be built after the core pivot (steps 1-8) is stable, not during it.*
 
 A separate, manually-triggered audit that asks "are we missing a source that's now worth adding?" — distinct from the daily pipeline run, and read-only (it reports gaps, it does not edit `config.json` itself).
 
@@ -702,7 +745,8 @@ Query: "Sydney CFD broker market commentary"
 
 ## Open questions to resolve before implementation
 
-- Which paid subscriptions are you actually willing to pay for? This determines whether step 3 is in scope at all.
+- Which paid subscriptions are you actually willing to pay for? This determines whether step 4 is in scope at all.
+- **Is Chinese (zh) output still wanted for a CFD digest?** Sources are predominantly English (ASIC, RBA, AFR, ASX). Dropping zh saves ~50% enrichment tokens; keeping it serves Chinese-language CFD traders in Sydney. Decide before the `prompts.py` rewrite (step 2).
 - Does ASIC publish a usable RSS/API for media releases and CFD product intervention orders, or does it need scraping (different effort/legal-ToS consideration)?
 - Should AUD/USD and other forex pairs be in scope from day one, or ASX-equity-CFD-first?
 - Is `obb.news.company()` willing to accept forex/commodity symbols, or does broadening OpenBB require switching to different endpoints entirely? (Needs empirical SDK testing.)
