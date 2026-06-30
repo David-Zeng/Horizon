@@ -743,6 +743,67 @@ Query: "Sydney CFD broker market commentary"
 - Two new prompt constants in `src/ai/prompts.py` (`SOURCE_GAP_SYSTEM`/`SOURCE_GAP_USER`), following the existing system/user-prompt-pair convention.
 - A new CLI entry point (`horizon-discover` in `pyproject.toml`'s `[project.scripts]`, mirroring `horizon-webhook`'s `src.services.webhook_cli:main` pattern) or an MCP tool (`hz_discover_sources` in `src/mcp/server.py`, alongside the existing `hz_*` staged-pipeline tools) — either fits the existing entry-point conventions equally well; worth picking based on whether this gets run from a terminal or from an MCP-connected assistant day to day.
 
+## Extension: ad-hoc research agent (reuses the staged pipeline with a dynamic question)
+
+The pivot produces a fixed-topic daily digest. A natural extension — buildable on what the pipeline already provides — is an **ad-hoc research agent**: a user poses a research question (via MCP or CLI), and the agent dynamically selects sources, fetches, scores, enriches, and produces a one-off research brief. This is not a new product; it's the same staged pipeline orchestrated by a planner that takes a question instead of reading fixed config.
+
+**Why this is a small extension, not a rebuild:** the MCP server already decomposes the pipeline into callable stages (`hz_fetch_items` → `hz_score_items` → `hz_filter_items` → `hz_enrich_items` → `hz_generate_summary`, per `src/mcp/server.py:152-262`). The scrapers, `AIClient.complete()` JSON pattern, DuckDuckGo web search (`enricher.py:81-82`), and `StorageManager` run-state tracking are all topic-agnostic. The new work is a planning layer upfront and a parameterized scoring rubric — not new infrastructure.
+
+```mermaid
+flowchart TD
+    question["User research question, via MCP hz_research or CLI horizon-research"]
+    plan["Planner step, AI call, given the question output a structured plan: which scrapers, what query strings, what time window, what rubric"]
+    fetch["hz_fetch_items with plan parameters overriding config, GDELT and Google News query fields set per plan, RSS and Reddit optional"]
+    score["hz_score_items with a dynamic rubric, score relevance to THIS question not the fixed CFD rubric"]
+    filter["hz_filter_items, threshold set per plan or default"]
+    enrich["hz_enrich_items, DuckDuckGo grounding already built in"]
+    summarize["hz_generate_summary, research-brief format, reusable digest shape with a synthesis section"]
+    store["StorageManager persists the research run under a research namespace, alongside daily runs"]
+    deliver["Deliver via webhook or email or return via MCP, same output paths as daily digest"]
+
+    question --> plan
+    plan --> fetch
+    fetch --> score
+    score --> filter
+    filter --> enrich
+    enrich --> summarize
+    summarize --> store
+    summarize --> deliver
+
+    style question fill:#4a90d9,color:#ffffff
+    style plan fill:#e0a030,color:#212121
+    style fetch fill:#50b060,color:#ffffff
+    style score fill:#50b060,color:#ffffff
+    style filter fill:#50b060,color:#ffffff
+    style enrich fill:#50b060,color:#ffffff
+    style summarize fill:#50b060,color:#ffffff
+    style store fill:#9060c0,color:#ffffff
+    style deliver fill:#c05050,color:#ffffff
+```
+
+**What's already there and reused unmodified:**
+
+- **Staged MCP tools** (`server.py:152-262`) — the research agent orchestrates these same steps; it doesn't reimplement fetch/score/enrich/summarize.
+- **GDELT/Google News `query` fields** (`models.py:280`, `google_news.py`) — already string parameters, just currently read from config. A research invocation passes the plan's query strings instead.
+- **DuckDuckGo web search** (`enricher.py:81-82`) — already a research-grade grounding primitive; the enrichment pass grounds each item in web context regardless of topic.
+- **`AIClient.complete()` JSON-response pattern** — used for the planner step (question → structured plan) the same way it's used for scoring/enrichment today.
+- **`StorageManager` run-state** — persists research runs alongside daily runs; the existing `hz_list_runs`/`hz_get_run_*` tools work on research runs without modification if they share the run-id namespace.
+- **Output paths** (webhook, email, MCP return) — identical to the daily digest; a research brief is just another summary artifact.
+
+**What's genuinely new (the extension work):**
+
+1. **Planner step** — a new AI call that takes the research question and outputs a structured plan: which scrapers to run, what query strings (for GDELT/Google News), what time window, and a scoring rubric context. This is the "agent" part — it's a planner, not a fixed pipeline. New prompt constant `RESEARCH_PLANNER_SYSTEM`/`RESEARCH_PLANNER_USER` in `prompts.py`, following the existing system/user-pair convention. Output is JSON (scrapers list, queries, window, rubric hints) consumed by the orchestrator.
+2. **Parameterized scraper invocation** — currently scrapers read from `data/config.json` at construction. A research run needs to pass the plan's queries at call time. Two paths: (a) the MCP `hz_fetch_items` tool accepts optional override parameters that flow through to the scrapers (cleanest, but requires the tool signature and `HorizonOrchestrator.fetch_all_sources()` to accept overrides), or (b) a transient config object built from the plan and passed to a one-off orchestrator instance. Path (a) is more reusable; path (b) is less invasive. Decide at implementation time.
+3. **Dynamic scoring rubric** — the fixed `CONTENT_ANALYSIS_SYSTEM` (`prompts.py:23-60`) scores "CFD relevance." A research agent needs to score "relevance to THIS specific question." Add a `RESEARCH_SCORING_SYSTEM` constant that takes the question as a parameter (injected into the system prompt at call time), or parameterize the existing rubric with a `{topic}` placeholder. The scoring call shape (`analyzer.py` `analyze_batch()`) is unchanged — only the system-prompt text differs.
+4. **Research-brief output format** — can reuse the daily digest shape (front matter, ranked list, per-item sections with Background/Tags), or add a synthesis section at the top that directly answers the research question using the enriched items as evidence. The summarizer (`summarizer.py`) would need a `RESEARCH_SUMMARY_SYSTEM` prompt variant that frames the output as an answer-with-citations rather than a neutral digest.
+5. **Entry point** — `hz_research` MCP tool (alongside the existing `hz_*` tools in `server.py`) and/or `horizon-research` CLI (mirroring `horizon-webhook`'s entry-point pattern in `pyproject.toml`). The MCP path is more natural for an agent (an MCP-connected assistant can call `hz_research` and iterate), the CLI path is more natural for terminal-driven one-offs.
+
+**Relationship to the source-gap discovery module (appendix above):** both are manually-triggered, AI-driven, reuse `ddgs` + `AIClient`. The research agent is the superset — it does fetch+score+enrich+summarize on a dynamic topic, while the gap finder only does search+AI-judge. They share the "AI plans the queries" pattern. If both are built, the planner step (question → structured plan) is a shared primitive; the gap finder is a degenerate case that stops after the search+judge step rather than running the full pipeline.
+
+**Why this earns a place in the plan rather than being a separate doc:** it's a direct demonstration that the pivot architecture (topic-agnostic pipeline, config-only coupling, staged MCP tools) generalizes beyond the daily CFD digest. The same extension wouldn't have been as natural pre-pivot, because the old AI/tech rubric was hardcoded into `prompts.py` with no parameterization path. The CFD pivot's `prompts.py` rewrite (step 2) is the moment that makes the research-agent extension cheap — once the rubric is a swappable parameter rather than a hardcoded constant, ad-hoc research is just "run the pipeline with a different rubric and a planner upfront."
+
+**Sequencing:** build after the core pivot (steps 1-8) is stable. The research agent depends on the parameterized rubric (step 2) and ideally on the OpenBB extension (step 6) so that financial-research questions can pull forex/commodity/economic-calendar data, not just news. A non-financial research question (e.g. "summarize the last week of debate on EU AI Act enforcement") works with just GDELT/Google News/RSS + DuckDuckGo enrichment and could be a v1 that ships before step 6 — but the financial-research use case (the one this pivot serves) benefits from the full source mix.
+
 ## Open questions to resolve before implementation
 
 - Which paid subscriptions are you actually willing to pay for? This determines whether step 4 is in scope at all.
@@ -754,3 +815,5 @@ Query: "Sydney CFD broker market commentary"
 - Which GitHub plan tier does the company org actually have, and does it confirmed-include private Pages visibility — needs checking before the migration plan above is finalized.
 - Repo transfer (keep history) vs. fresh repo (clean break from the public AI/tech history) — which is preferred for the company org copy?
 - Who else at the company needs access, and should they be added as org members/collaborators before or after the first private CFD run?
+- **Ad-hoc research agent**: should the planner step be a single AI call (question → full plan) or iterative (propose plan → user confirms/edits → execute)? A single-call planner is simpler and fits the MCP tool model; an iterative planner is more agentic but adds a human-in-the-loop step that the current MCP tool signatures don't support.
+- **Research agent scope**: financial-research only (reuse the CFD source mix) or general-purpose (any topic, lean on GDELT/Google News + DuckDuckGo)? General-purpose is a bigger claim but barely more code since the pipeline is topic-agnostic — the difference is mostly whether the planner prompt constrains source selection to financial sources or allows any.
