@@ -11,6 +11,32 @@ Horizon is configured through two files: a `.env` file for API keys and a `data/
 
 Configure which AI model scores and summarizes your content.
 
+`api_key_env` is always an environment variable name, not the API key value.
+Store secrets in `.env` or your shell environment, then point `api_key_env` at
+that variable:
+
+```bash
+OPENAI_API_KEY=sk-your-key
+GOOGLE_API_KEY=your-gemini-key
+```
+
+When Horizon starts, environment variables have priority because
+`data/config.json` does not store the secret. For local VS Code runs, create
+`.env` in the repository root and launch Horizon from that same root directory.
+
+Common API key variable names:
+
+| Provider | `api_key_env` value |
+| --- | --- |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| OpenAI | `OPENAI_API_KEY` |
+| Azure OpenAI | `AZURE_OPENAI_API_KEY` |
+| Gemini | `GOOGLE_API_KEY` |
+| MiniMax | `MINIMAX_API_KEY` |
+| Aliyun DashScope | `DASHSCOPE_API_KEY` |
+| Doubao | `DOUBAO_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+
 **Anthropic Claude**:
 
 ```json
@@ -32,6 +58,19 @@ Configure which AI model scores and summarizes your content.
     "provider": "openai",
     "model": "gpt-4",
     "api_key_env": "OPENAI_API_KEY",
+    "throttle_sec": 0
+  }
+}
+```
+
+**Gemini**:
+
+```json
+{
+  "ai": {
+    "provider": "gemini",
+    "model": "gemini-2.0-flash",
+    "api_key_env": "GOOGLE_API_KEY",
     "throttle_sec": 0
   }
 }
@@ -60,14 +99,14 @@ Set `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_ENDPOINT` in your `.env`. The `mode
 {
   "ai": {
     "provider": "minimax",
-    "model": "MiniMax-M2.7",
+    "model": "MiniMax-M3",
     "api_key_env": "MINIMAX_API_KEY",
     "throttle_sec": 0
   }
 }
 ```
 
-Available models: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`, `MiniMax-M2.5`, `MiniMax-M2.5-highspeed`
+Available models: `MiniMax-M3`, `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`
 
 **Aliyun DashScope** (OpenAI-compatible):
 
@@ -83,6 +122,26 @@ Available models: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`, `MiniMax-M2.5`, `Min
 ```
 
 Use the [DashScope compatible-mode](https://help.aliyun.com/zh/dashscope/developer-reference/use-dashscope-by-calling-openai-api) endpoint. Set `DASHSCOPE_API_KEY` in your `.env`. Optional: set `base_url` to override the default `https://dashscope.aliyuncs.com/compatible-mode/v1`.
+
+**Ollama**:
+
+```json
+{
+  "ai": {
+    "provider": "ollama",
+    "model": "llama3.1",
+    "api_key_env": "",
+    "base_url": "http://192.168.1.10:11434",
+    "throttle_sec": 0
+  }
+}
+```
+
+Omit `base_url` to use the default `http://localhost:11434/v1`.
+For remote Ollama servers, set `ai.base_url` in `data/config.json` or set
+`HORIZON_OLLAMA_BASE_URL` in `.env`. `OLLAMA_BASE_URL` and `OLLAMA_HOST` are
+also recognized. If the value omits `/v1`, Horizon appends it automatically
+for Ollama's OpenAI-compatible endpoint.
 
 ### AI throttling
 
@@ -192,6 +251,8 @@ All sources are configured under the top-level `sources` key in `config.json`.
 ```
 
 ### Reddit
+
+Reddit scraping is free and does not require API keys. Subreddit posts and comments prefer `old.reddit.com`; JSON and RSS endpoints are used as fallbacks when needed.
 
 ```json
 {
@@ -361,13 +422,50 @@ Content is scored 0-10:
 {
   "filtering": {
     "ai_score_threshold": 7.0,
-    "time_window_hours": 24
+    "time_window_hours": 24,
+    "max_items": 20,
+    "category_groups": {
+      "ai": {
+        "name": "AI / Machine Learning",
+        "limit": 5,
+        "categories": ["ai-news", "ai-tools", "machine-learning", "llm"]
+      },
+      "finance": {
+        "name": "Finance",
+        "limit": 5,
+        "categories": ["finance", "equities", "crypto"]
+      }
+    },
+    "default_group": "other",
+    "default_group_limit": 3
   }
 }
 ```
 
 - `ai_score_threshold`: Only include content scoring >= this value
 - `time_window_hours`: Fetch content from last N hours
+- `max_items`: Optional final cap after all group limits are applied
+- `category_groups`: Optional map of quota groups. Each group requires a positive
+  `limit` and a non-empty `categories` list. Items within each group are kept by
+  AI score, highest first.
+- `category_groups.*.name`: Optional display name used in run logs
+- `default_group`: Group key for items whose category does not match any
+  configured group. Default is `other`.
+- `default_group_limit`: Optional positive limit for unmatched items. If omitted,
+  unmatched items are unlimited except for `max_items`.
+
+Balanced digest filtering runs after AI score threshold filtering and topic
+deduplication, but before enrichment. This reduces enrichment calls to only the
+items that can appear in the final digest.
+
+Group matching uses the source category stored in `ContentItem.metadata.category`.
+RSS sources expose this through `sources.rss[].category`, and OpenBB watchlists
+through `sources.openbb.watchlists[].category`. Sources without a category enter
+the default group.
+
+If the same category appears in multiple groups, Horizon logs a warning and uses
+the first group in configuration order. Omitting both `category_groups` and
+`max_items` preserves the previous filtering behavior.
 
 ## Environment Variable Substitution
 

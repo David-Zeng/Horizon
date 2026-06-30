@@ -628,22 +628,25 @@ class WebhookNotifier:
         except (json.JSONDecodeError, ValueError):
             return None
 
-        # Feishu/Lark: "code" or "StatusCode" field
-        feishu_code = data.get("code") or data.get("StatusCode")
-        if feishu_code is not None and feishu_code != 0:
-            msg = data.get("msg") or data.get("StatusMessage") or ""
-            return f"Feishu/Lark error (code={feishu_code}): {msg}"
+        platform = (self.config.platform or "").lower()
+        check_all = platform in ("", "generic")
 
-        # DingTalk: "errcode" field
-        dingtalk_code = data.get("errcode")
-        if dingtalk_code is not None and dingtalk_code != 0:
-            msg = data.get("errmsg") or ""
-            return f"DingTalk error (errcode={dingtalk_code}): {msg}"
+        if platform in ("feishu", "lark") or check_all:
+            code = data.get("code") or data.get("StatusCode")
+            if code is not None and code != 0:
+                msg = data.get("msg") or data.get("StatusMessage") or ""
+                return f"Feishu/Lark error (code={code}): {msg}"
 
-        # Slack/Discord: "ok" field
-        if data.get("ok") is False:
-            error = data.get("error") or ""
-            return f"Slack/Discord error: {error}"
+        if platform == "dingtalk" or check_all:
+            errcode = data.get("errcode")
+            if errcode is not None and errcode != 0:
+                msg = data.get("errmsg") or ""
+                return f"DingTalk error (errcode={errcode}): {msg}"
+
+        if platform in ("slack", "discord") or check_all:
+            if data.get("ok") is False:
+                error = data.get("error") or ""
+                return f"Slack/Discord error: {error}"
 
         return None
 
