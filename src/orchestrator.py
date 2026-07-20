@@ -4,13 +4,13 @@ import asyncio
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Optional
-from urllib.parse import urlparse
+from typing import Dict, List, Literal, Optional
+from urllib.parse import unquote_plus, urlsplit
 import httpx
 from rich.console import Console
 
 from .models import Config, ContentItem
-from .storage.manager import StorageManager
+from .storage.manager import StorageManager, safe_output_path
 from .services.email import EmailManager
 from .services.webhook import WebhookNotifier
 from .scrapers.github import GitHubScraper
@@ -31,6 +31,50 @@ from .ai.enricher import ContentEnricher
 from .ai.tokens import get_usage_snapshot
 
 
+_TRACKING_QUERY_PARAMETERS = {
+    "_ga",
+    "dclid",
+    "fbclid",
+    "gclid",
+    "igshid",
+    "li_fat_id",
+    "mc_cid",
+    "mc_eid",
+    "msclkid",
+    "ttclid",
+    "twclid",
+    "vero_id",
+}
+
+
+def _deduplication_url_key(url: str) -> tuple[str, str, str, str, Optional[int], str, str]:
+    """Return a conservative URL identity key for cross-source deduplication."""
+    parsed = urlsplit(url)
+    scheme = parsed.scheme.lower()
+    host = (parsed.hostname or "").lower()
+    port = parsed.port
+    if (scheme, port) in {("http", 80), ("https", 443)}:
+        port = None
+
+    path = parsed.path.rstrip("/") or "/"
+    query_parts = []
+    for part in parsed.query.split("&") if parsed.query else []:
+        name = unquote_plus(part.partition("=")[0]).lower()
+        if name.startswith("utm_") or name in _TRACKING_QUERY_PARAMETERS:
+            continue
+        query_parts.append(part)
+
+    return (
+        scheme,
+        parsed.username or "",
+        parsed.password or "",
+        host,
+        port,
+        path,
+        "&".join(query_parts),
+    )
+
+
 @dataclass
 class BalancedDigestResult:
     """Items and selection statistics from balanced digest filtering."""
@@ -40,6 +84,81 @@ class BalancedDigestResult:
     group_counts: Dict[str, int] = field(default_factory=dict)
     group_limits: Dict[str, Optional[int]] = field(default_factory=dict)
     duplicate_categories: List[str] = field(default_factory=list)
+
+
+@dataclass
+class FilteringPipelineResult:
+    """Items and statistics from score, topic, and digest filtering."""
+
+    items: List[ContentItem]
+    threshold_count: int
+    topic_dedup_count: int
+    topic_dedup_removed: int
+    balanced_digest: BalancedDigestResult
+
+
+@dataclass
+class SourceFetchOutcome:
+    """Result of fetching one configured source."""
+
+    source_name: str
+    status: Literal["success", "empty", "failure"]
+    items: List[ContentItem] = field(default_factory=list)
+    error: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, object]:
+        result: Dict[str, object] = {
+            "source": self.source_name,
+            "status": self.status,
+            "item_count": len(self.items),
+        }
+        if self.error is not None:
+            result["error"] = self.error
+        return result
+
+
+@dataclass
+class FetchReport:
+    """Aggregate diagnostics for one fetch across configured sources."""
+
+    outcomes: List[SourceFetchOutcome] = field(default_factory=list)
+
+    @property
+    def status(self) -> Literal["not_attempted", "success", "partial_failure", "failure"]:
+        if not self.outcomes:
+            return "not_attempted"
+        if self.failed_count == len(self.outcomes):
+            return "failure"
+        if self.failed_count:
+            return "partial_failure"
+        return "success"
+
+    @property
+    def failed_count(self) -> int:
+        return sum(outcome.status == "failure" for outcome in self.outcomes)
+
+    @property
+    def all_failed(self) -> bool:
+        return bool(self.outcomes) and self.failed_count == len(self.outcomes)
+
+    def failure_message(self) -> str:
+        failures = "; ".join(
+            f"{outcome.source_name}: {outcome.error or 'unknown error'}"
+            for outcome in self.outcomes
+            if outcome.status == "failure"
+        )
+        return f"All {len(self.outcomes)} attempted sources failed ({failures})"
+
+    def to_dict(self) -> Dict[str, object]:
+        return {
+            "status": self.status,
+            "attempted": len(self.outcomes),
+            "successful": len(self.outcomes) - self.failed_count,
+            "empty": sum(outcome.status == "empty" for outcome in self.outcomes),
+            "failed": self.failed_count,
+            "item_count": sum(len(outcome.items) for outcome in self.outcomes),
+            "sources": [outcome.to_dict() for outcome in self.outcomes],
+        }
 
 
 class HorizonOrchestrator:
@@ -61,6 +180,7 @@ class HorizonOrchestrator:
             if config.webhook and config.webhook.enabled
             else None
         )
+        self.last_fetch_report: Optional[FetchReport] = None
 
     async def run(self, force_hours: int = None) -> None:
         """Execute the complete workflow.
@@ -89,6 +209,9 @@ class HorizonOrchestrator:
             all_items = await self.fetch_all_sources(since)
             self.console.print(f"📥 Fetched {len(all_items)} items from all sources\n")
 
+            if self.last_fetch_report and self.last_fetch_report.all_failed:
+                raise RuntimeError(self.last_fetch_report.failure_message())
+
             if not all_items:
                 self.console.print("[yellow]No new content found. Exiting.[/yellow]")
                 return
@@ -105,33 +228,18 @@ class HorizonOrchestrator:
             analyzed_items = await self._analyze_content(merged_items)
             self.console.print(f"🤖 Analyzed {len(analyzed_items)} items with AI\n")
 
-            # 5. Filter by score threshold
-            threshold = self.config.filtering.ai_score_threshold
-            important_items = [
-                item for item in analyzed_items
-                if item.ai_score and item.ai_score >= threshold
-            ]
-            important_items.sort(key=lambda x: x.ai_score or 0, reverse=True)
-
-            self.console.print(
-                f"⭐️ {len(important_items)} items scored ≥ {threshold}\n"
+            # 5. Filter, deduplicate, and balance the digest
+            filtering_result = await self.filter_items(
+                analyzed_items,
+                apply_balance=False,
             )
+            important_items = filtering_result.items
 
-            # 5.5 Semantic deduplication: drop items covering the same topic
-            deduped_items = await self.merge_topic_duplicates(important_items)
-            if len(deduped_items) < len(important_items):
-                self.console.print(
-                    f"🧹 Removed {len(important_items) - len(deduped_items)} topic duplicates "
-                    f"→ {len(deduped_items)} unique items\n"
-                )
-            important_items = deduped_items
-
-            # 5.6 Optional second-stage Twitter reply expansion + targeted re-analysis
+            # 5.5 Optional second-stage Twitter reply expansion + targeted re-analysis
             await self._expand_twitter_discussion(important_items)
 
-            # 5.7 Apply per-category and global digest limits before enrichment
-            balanced_result = self.apply_balanced_digest(important_items)
-            important_items = balanced_result.items
+            # 5.6 Apply digest limits after any targeted re-analysis changes scores.
+            important_items = self.apply_balanced_digest(important_items).items
 
             # Show per-sub-source selection breakdown
             selected_counts: Dict[str, int] = defaultdict(int)
@@ -163,7 +271,7 @@ class HorizonOrchestrator:
                     posts_dir = Path("docs/_posts")
                     posts_dir.mkdir(parents=True, exist_ok=True)
 
-                    dest_path = posts_dir / post_filename
+                    dest_path = safe_output_path(posts_dir, post_filename)
 
                     # Add Jekyll front matter
                     front_matter = (
@@ -255,6 +363,7 @@ class HorizonOrchestrator:
         Returns:
             List[ContentItem]: All fetched items
         """
+        self.last_fetch_report = None
         async with httpx.AsyncClient(timeout=30.0) as client:
             tasks = []
 
@@ -270,7 +379,12 @@ class HorizonOrchestrator:
 
             # RSS feeds
             if self.config.sources.rss:
-                rss_scraper = RSSScraper(self.config.sources.rss, client)
+                from .extractors import ExtractorRegistry
+                rss_scraper = RSSScraper(
+                    self.config.sources.rss,
+                    client,
+                    ExtractorRegistry(self.config.extractors),
+                )
                 tasks.append(self._fetch_with_progress("RSS Feeds", rss_scraper, since))
 
             # Reddit
@@ -313,19 +427,19 @@ class HorizonOrchestrator:
                 tasks.append(self._fetch_with_progress("Google News", gn_scraper, since))
 
             # Fetch all concurrently
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            outcomes = await asyncio.gather(*tasks)
+            self.last_fetch_report = FetchReport(outcomes=list(outcomes))
 
-            # Flatten results
-            all_items = []
-            for result in results:
-                if isinstance(result, Exception):
-                    self.console.print(f"[red]Error fetching source: {result}[/red]")
-                elif isinstance(result, list):
-                    all_items.extend(result)
+            # Flatten successful and empty outcomes; failures remain in the report.
+            all_items: List[ContentItem] = []
+            for outcome in outcomes:
+                all_items.extend(outcome.items)
 
             return all_items
 
-    async def _fetch_with_progress(self, name: str, scraper, since: datetime) -> List[ContentItem]:
+    async def _fetch_with_progress(
+        self, name: str, scraper, since: datetime
+    ) -> SourceFetchOutcome:
         """Fetch from a scraper with progress indication.
 
         Args:
@@ -334,10 +448,20 @@ class HorizonOrchestrator:
             since: Fetch items after this time
 
         Returns:
-            List[ContentItem]: Fetched items
+            SourceFetchOutcome: Named fetch result and diagnostics
         """
         self.console.print(f"🔍 Fetching from {name}...")
-        items = await scraper.fetch(since)
+        try:
+            items = await scraper.fetch(since)
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            self.console.print(f"[red]   Failed to fetch {name}: {error}[/red]")
+            return SourceFetchOutcome(
+                source_name=name,
+                status="failure",
+                error=error,
+            )
+
         self.console.print(f"   Found {len(items)} items from {name}")
 
         # Show per-sub-source breakdown when there are multiple sub-sources
@@ -348,7 +472,11 @@ class HorizonOrchestrator:
             for sub, count in sorted(sub_counts.items()):
                 self.console.print(f"      • {sub}: {count}")
 
-        return items
+        return SourceFetchOutcome(
+            source_name=name,
+            status="success" if items else "empty",
+            items=items,
+        )
 
     @staticmethod
     def _sub_source_label(item: ContentItem) -> str:
@@ -387,34 +515,27 @@ class HorizonOrchestrator:
         Returns:
             List[ContentItem]: Deduplicated items
         """
-        def normalize_url(url: str) -> str:
-            parsed = urlparse(str(url))
-            # Strip www prefix, trailing slashes, and fragments
-            host = parsed.hostname or ""
-            if host.startswith("www."):
-                host = host[4:]
-            path = parsed.path.rstrip("/")
-            return f"{host}{path}"
-
         # Group by normalized URL
-        url_groups: Dict[str, List[ContentItem]] = {}
+        url_groups: Dict[tuple[str, str, str, str, Optional[int], str, str], List[ContentItem]] = {}
         for item in items:
-            key = normalize_url(str(item.url))
+            key = _deduplication_url_key(str(item.url))
             url_groups.setdefault(key, []).append(item)
 
         merged = []
-        for key, group in url_groups.items():
+        for group in url_groups.values():
+            group_copies = [item.model_copy(deep=True) for item in group]
             if len(group) == 1:
-                merged.append(group[0])
+                merged.append(group_copies[0])
                 continue
 
             # Pick the item with the richest content as primary
-            primary = max(group, key=lambda x: len(x.content or ""))
+            primary = max(group_copies, key=lambda x: len(x.content or ""))
 
             # Merge metadata and source info from other items
-            all_sources = set()
-            for item in group:
-                all_sources.add(item.source_type.value)
+            all_sources = []
+            for item in group_copies:
+                if item.source_type.value not in all_sources:
+                    all_sources.append(item.source_type.value)
                 # Merge metadata (engagement, discussion, etc.)
                 for mk, mv in item.metadata.items():
                     if mk not in primary.metadata or not primary.metadata[mk]:
@@ -425,12 +546,17 @@ class HorizonOrchestrator:
                     if primary.content and item.content not in primary.content:
                         primary.content = (primary.content or "") + f"\n\n--- From {item.source_type.value} ---\n" + item.content
 
-            primary.metadata["merged_sources"] = list(all_sources)
+            primary.metadata["merged_sources"] = all_sources
             merged.append(primary)
 
         return merged
 
-    async def merge_topic_duplicates(self, items: List[ContentItem]) -> List[ContentItem]:
+    async def merge_topic_duplicates(
+        self,
+        items: List[ContentItem],
+        *,
+        log: bool = True,
+    ) -> List[ContentItem]:
         """Merge items covering the same topic using AI semantic deduplication.
 
         This is a stable stage helper for integrations such as MCP.
@@ -464,12 +590,14 @@ class HorizonOrchestrator:
             )
             result = parse_json_response(response)
             if result is None:
-                self.console.print("[yellow]  dedup: could not parse AI response, skipping[/yellow]")
+                if log:
+                    self.console.print("[yellow]  dedup: could not parse AI response, skipping[/yellow]")
                 return items
 
             duplicate_groups = result.get("duplicates", [])
         except Exception as e:
-            self.console.print(f"[yellow]  dedup: AI call failed ({e}), skipping[/yellow]")
+            if log:
+                self.console.print(f"[yellow]  dedup: AI call failed ({e}), skipping[/yellow]")
             return items
 
         if not duplicate_groups:
@@ -495,13 +623,65 @@ class HorizonOrchestrator:
                     if not primary.content or dup.content not in primary.content:
                         label = dup.source_type.value
                         primary.content = (primary.content or "") + f"\n\n--- From {label} ---\n{dup.content}"
-                self.console.print(
-                    f"   [dim]dedup: keep [{primary_idx}] {primary.title}[/dim]\n"
-                    f"   [dim]       drop [{dup_idx}] {dup.title}[/dim]"
-                )
+                if log:
+                    self.console.print(
+                        f"   [dim]dedup: keep [{primary_idx}] {primary.title}[/dim]\n"
+                        f"   [dim]       drop [{dup_idx}] {dup.title}[/dim]"
+                    )
                 drop_indices.add(dup_idx)
 
         return [item for i, item in enumerate(items) if i not in drop_indices]
+
+    async def filter_items(
+        self,
+        items: List[ContentItem],
+        *,
+        threshold: Optional[float] = None,
+        topic_dedup: bool = True,
+        apply_balance: bool = True,
+        log: bool = True,
+    ) -> FilteringPipelineResult:
+        """Apply score thresholding, optional topic dedup, and digest balancing."""
+        effective_threshold = (
+            threshold
+            if threshold is not None
+            else self.config.filtering.ai_score_threshold
+        )
+        threshold_items = [
+            item
+            for item in items
+            if item.ai_score is not None and item.ai_score >= effective_threshold
+        ]
+        threshold_items.sort(key=lambda item: item.ai_score or 0, reverse=True)
+
+        if log:
+            self.console.print(
+                f"⭐️ {len(threshold_items)} items scored ≥ {effective_threshold}\n"
+            )
+
+        deduped_items = threshold_items
+        if topic_dedup and deduped_items:
+            deduped_items = await self.merge_topic_duplicates(deduped_items, log=log)
+        topic_dedup_removed = len(threshold_items) - len(deduped_items)
+
+        if log and topic_dedup_removed:
+            self.console.print(
+                f"🧹 Removed {topic_dedup_removed} topic duplicates "
+                f"→ {len(deduped_items)} unique items\n"
+            )
+
+        balanced_digest = (
+            self.apply_balanced_digest(deduped_items, log=log)
+            if apply_balance
+            else BalancedDigestResult(items=deduped_items)
+        )
+        return FilteringPipelineResult(
+            items=balanced_digest.items,
+            threshold_count=len(threshold_items),
+            topic_dedup_count=len(deduped_items),
+            topic_dedup_removed=topic_dedup_removed,
+            balanced_digest=balanced_digest,
+        )
 
     def apply_balanced_digest(
         self,

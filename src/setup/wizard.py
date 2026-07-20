@@ -251,9 +251,9 @@ def build_config(
         elif src_type == "hackernews":
             hn_enabled = True
 
-    # Always include HackerNews as a universal source
+    # Keep HackerNews as the fallback when no recommendation was selected.
     hn_config = HackerNewsConfig(
-        enabled=True,
+        enabled=hn_enabled or not selected_sources,
         fetch_top_stories=30,
         min_score=100,
     )
@@ -306,42 +306,45 @@ def merge_configs(new_config: Config, existing_config: Config) -> Config:
     Returns:
         Merged Config object.
     """
-    merged = new_config.model_copy(deep=True)
+    merged = existing_config.model_copy(deep=True)
+    merged.ai = new_config.ai.model_copy(deep=True)
+    merged.filtering = new_config.filtering.model_copy(deep=True)
 
-    # Merge GitHub sources by unique key
-    existing_gh = {_gh_key(s): s for s in existing_config.sources.github}
-    for src in merged.sources.github:
-        key = _gh_key(src)
-        if key in existing_gh:
-            # Keep existing enabled state
-            src.enabled = existing_gh[key].enabled
-            del existing_gh[key]
-    # Append remaining existing sources
-    merged.sources.github.extend(existing_gh.values())
-
-    # Merge RSS sources by URL
-    existing_rss = {s.url: s for s in existing_config.sources.rss}
-    for src in merged.sources.rss:
-        if src.url in existing_rss:
-            src.enabled = existing_rss[src.url].enabled
-            del existing_rss[src.url]
-    merged.sources.rss.extend(existing_rss.values())
-
-    # Merge Reddit subreddits
-    existing_subs = {
-        s.subreddit: s
-        for s in (existing_config.sources.reddit.subreddits or [])
-    }
-    new_subs = []
-    for sub in (merged.sources.reddit.subreddits or []):
-        name = sub.subreddit
-        if name in existing_subs:
-            del existing_subs[name]
-        new_subs.append(sub)
-    new_subs.extend(existing_subs.values())
-    merged.sources.reddit.subreddits = new_subs
+    merged.sources.github = _merge_source_list(
+        new_config.sources.github, existing_config.sources.github, _gh_key
+    )
+    merged.sources.rss = _merge_source_list(
+        new_config.sources.rss, existing_config.sources.rss, lambda source: str(source.url)
+    )
+    merged.sources.reddit.subreddits = _merge_source_list(
+        new_config.sources.reddit.subreddits,
+        existing_config.sources.reddit.subreddits,
+        lambda source: source.subreddit,
+    )
+    merged.sources.reddit.users = _merge_source_list(
+        new_config.sources.reddit.users,
+        existing_config.sources.reddit.users,
+        lambda source: source.username,
+    )
+    merged.sources.telegram.channels = _merge_source_list(
+        new_config.sources.telegram.channels,
+        existing_config.sources.telegram.channels,
+        lambda source: source.channel,
+    )
 
     return merged
+
+
+def _merge_source_list(new_sources, existing_sources, key):
+    """Merge and deduplicate sources without replacing existing settings."""
+    merged_by_key = {}
+    for source in existing_sources or []:
+        source_key = key(source)
+        merged_by_key.setdefault(source_key, source.model_copy(deep=True))
+    for source in new_sources or []:
+        source_key = key(source)
+        merged_by_key.setdefault(source_key, source.model_copy(deep=True))
+    return list(merged_by_key.values())
 
 
 def _gh_key(src: GitHubSourceConfig) -> str:
@@ -447,8 +450,18 @@ def _count_sources(config: Config) -> int:
         count += 1
     count += len([s for s in config.sources.rss if s.enabled])
     if config.sources.reddit.enabled:
-        count += len(config.sources.reddit.subreddits or [])
-        count += len(config.sources.reddit.users or [])
+        count += len([s for s in config.sources.reddit.subreddits if s.enabled])
+        count += len([s for s in config.sources.reddit.users if s.enabled])
     if config.sources.telegram.enabled:
-        count += len(config.sources.telegram.channels or [])
+        count += len([s for s in config.sources.telegram.channels if s.enabled])
+    if config.sources.twitter and config.sources.twitter.enabled:
+        count += len(config.sources.twitter.users)
+    if config.sources.openbb and config.sources.openbb.enabled:
+        count += len([s for s in config.sources.openbb.watchlists if s.enabled])
+    if config.sources.ossinsight.enabled:
+        count += 1
+    if config.sources.gdelt and config.sources.gdelt.enabled:
+        count += 1
+    if config.sources.google_news and config.sources.google_news.enabled:
+        count += 1
     return count

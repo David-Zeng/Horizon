@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 from typing import List, Optional
+from pydantic import BaseModel, Field, ValidationError
 from tenacity import retry, stop_after_attempt, wait_exponential
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
 
@@ -13,6 +14,15 @@ from .utils import parse_json_response
 from ..models import ContentItem
 
 DEFAULT_THROTTLE_SEC = 0.0
+
+
+class AnalysisResult(BaseModel):
+    """Validated structured result returned by the analysis model."""
+
+    score: float = Field(ge=0, le=10, allow_inf_nan=False)
+    reason: str
+    summary: str
+    tags: list[str]
 
 
 class ContentAnalyzer:
@@ -146,7 +156,11 @@ class ContentAnalyzer:
         )
 
         # Parse JSON response with robust fallback
-        result = self._parse_json_response(response)
+        parsed = self._parse_json_response(response)
+        try:
+            result = AnalysisResult.model_validate(parsed) if parsed is not None else None
+        except ValidationError:
+            result = None
         if result is None:
             print(f"Warning: could not parse analysis response for {item.id}, using defaults")
             item.ai_score = 0.0
@@ -156,7 +170,7 @@ class ContentAnalyzer:
             return
 
         # Update item with analysis results
-        item.ai_score = float(result.get("score", 0))
-        item.ai_reason = result.get("reason", "")
-        item.ai_summary = result.get("summary", item.title)
-        item.ai_tags = result.get("tags", [])
+        item.ai_score = result.score
+        item.ai_reason = result.reason
+        item.ai_summary = result.summary
+        item.ai_tags = result.tags

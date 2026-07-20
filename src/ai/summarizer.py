@@ -1,13 +1,41 @@
 """Daily summary generation — pure programmatic rendering."""
 
+import html
 import re
-from typing import List, Dict
+from typing import Dict, List, Optional
+from urllib.parse import quote, urlsplit
 
 from ..models import ContentItem
 
 
 _CJK = r"[\u4e00-\u9fff\u3400-\u4dbf]"
 _ASCII = r"[A-Za-z0-9]"
+_MARKDOWN_SPECIAL = re.compile(r"([\\`*_{}\[\]()<>#!|])")
+_MARKDOWN_BLOCK_START = re.compile(r"(?m)^( {0,3})(>|[-+] |\d+[.)] )")
+_URL_SAFE_CHARS = ":/?#[]@!$&'*,;=~%+"
+
+
+def _escape_markdown(value: object) -> str:
+    """Render untrusted text literally while retaining its readable content."""
+    escaped = html.escape(str(value), quote=True)
+    escaped = _MARKDOWN_SPECIAL.sub(r"\\\1", escaped)
+    return _MARKDOWN_BLOCK_START.sub(r"\1\\\2", escaped)
+
+
+def _safe_url(value: object) -> Optional[str]:
+    """Return an HTML/Markdown-safe HTTP(S) URL, or None for unsafe URLs."""
+    raw = str(value).strip()
+    if not raw or any(ord(char) < 32 or ord(char) == 127 for char in raw):
+        return None
+    try:
+        parsed = urlsplit(raw)
+        if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+            return None
+        parsed.port
+    except (TypeError, ValueError):
+        return None
+    encoded = quote(raw, safe=_URL_SAFE_CHARS)
+    return html.escape(encoded, quote=True)
 
 
 def _pangu(text: str) -> str:
@@ -102,7 +130,7 @@ class DailySummarizer:
         toc_entries = []
         for i, item in enumerate(items):
             _t = item.metadata.get(f"title_{language}") or item.title
-            t = str(_t).replace("[", "(").replace("]", ")")
+            t = _escape_markdown(_t)
             if language == "zh":
                 t = _pangu(t)
             score = item.ai_score or "?"
@@ -140,11 +168,13 @@ class DailySummarizer:
 
         entries = []
         for i, item in enumerate(items, start=1):
-            title = str(item.metadata.get(f"title_{language}") or item.title).replace("[", "(").replace("]", ")")
+            title = _escape_markdown(item.metadata.get(f"title_{language}") or item.title)
             if language == "zh":
                 title = _pangu(title)
             score = item.ai_score or "?"
-            entries.append(f"{i}. [{title}]({item.url}) \u2b50\ufe0f {score}/10")
+            url = _safe_url(item.url)
+            title_link = f"[{title}]({url})" if url else title
+            entries.append(f"{i}. {title_link} \u2b50\ufe0f {score}/10")
 
         return header + "\n".join(entries)
 
@@ -163,8 +193,9 @@ class DailySummarizer:
     def _format_item(self, item: ContentItem, labels: dict, language: str, index: int) -> str:
         """Format a single ContentItem into Markdown."""
         _title = item.metadata.get(f"title_{language}") or item.title
-        title = str(_title).replace("[", "(").replace("]", ")")
-        url = str(item.url)
+        title = _escape_markdown(_title)
+        raw_url = str(item.url)
+        url = _safe_url(raw_url)
         score = item.ai_score or "?"
         meta = item.metadata
 
@@ -181,6 +212,10 @@ class DailySummarizer:
             or ""
         )
 
+        summary = _escape_markdown(summary)
+        background = _escape_markdown(background)
+        discussion = _escape_markdown(discussion)
+
         if language == "zh":
             title = _pangu(title)
             summary = _pangu(summary)
@@ -189,13 +224,13 @@ class DailySummarizer:
 
         # Source line with parts joined by " · ", link appended at end
         source_type = item.source_type.value
-        source_parts = [source_type]
+        source_parts = [_escape_markdown(source_type)]
         if meta.get("subreddit"):
-            source_parts.append(f"r/{meta['subreddit']}")
+            source_parts.append(_escape_markdown(f"r/{meta['subreddit']}"))
         if meta.get("feed_name"):
-            source_parts.append(meta["feed_name"])
+            source_parts.append(_escape_markdown(meta["feed_name"]))
         else:
-            source_parts.append(item.author or "unknown")
+            source_parts.append(_escape_markdown(item.author or "unknown"))
         if item.published_at:
             if language == "zh":
                 source_parts.append(
@@ -209,13 +244,15 @@ class DailySummarizer:
 
         discussion_url = meta.get("discussion_url")
         if discussion_url:
-            discussion_url = str(discussion_url)
-            if discussion_url != url:
-                source_line += f' · [{labels["discussion"]}]({discussion_url})'
+            safe_discussion_url = _safe_url(discussion_url)
+            if safe_discussion_url and str(discussion_url) != raw_url:
+                source_line += f' · [{labels["discussion"]}]({safe_discussion_url})'
+
+        title_link = f"[{title}]({url})" if url else title
 
         lines = [
             f'<a id="item-{index}"></a>',
-            f"## [{title}]({url}) \u2b50\ufe0f {score}/10",  # ⭐️
+            f"## {title_link} \u2b50\ufe0f {score}/10",  # ⭐️
             "",
             summary,
             "",
@@ -228,7 +265,15 @@ class DailySummarizer:
 
         sources = meta.get("sources") or []
         if sources:
-            items_html = "".join(f'<li><a href="{s["url"]}">{s["title"]}</a></li>\n' for s in sources)
+            reference_items = []
+            for source in sources:
+                reference_title = html.escape(str(source.get("title", "")), quote=True)
+                reference_url = _safe_url(source.get("url", ""))
+                if reference_url:
+                    reference_items.append(f'<li><a href="{reference_url}">{reference_title}</a></li>\n')
+                else:
+                    reference_items.append(f"<li>{reference_title}</li>\n")
+            items_html = "".join(reference_items)
             lines += [
                 "",
                 f'<details><summary>{labels["references"]}</summary>\n<ul>\n{items_html}\n</ul>\n</details>',
@@ -239,7 +284,7 @@ class DailySummarizer:
             lines.append(f"**{labels['discussion']}**: {discussion}")
 
         if item.ai_tags:
-            tags_str = ", ".join([f"`#{t}`" for t in item.ai_tags])
+            tags_str = ", ".join([f"`#{_escape_markdown(t)}`" for t in item.ai_tags])
             lines.append("")
             lines.append(f"**{labels['tags']}**: {tags_str}")
 

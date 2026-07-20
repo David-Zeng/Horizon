@@ -138,3 +138,72 @@ def test_generate_empty_summary_zh_uses_localized_analyzed_line():
 
     assert "> 已分析 10 条内容，但没有达到重要性阈值的条目。" in result
     assert "Analyzed 10 items" not in result
+
+
+def test_generate_summary_escapes_untrusted_text_in_all_output_contexts():
+    summarizer = DailySummarizer()
+    item = _make_item(1)
+    item.title = '<script>alert("title")</script> [click](javascript:alert(1))'
+    item.ai_summary = '<img src=x onerror="alert(1)"> **summary**'
+    item.author = '<svg onload="alert(1)">'
+    item.ai_tags = ['tag`](javascript:alert(1))']
+    item.metadata.update(
+        {
+            "feed_name": '<b onclick="alert(1)">feed</b>',
+            "background": '<iframe src="data:text/html,bad"></iframe>',
+            "community_discussion": '[bad](data:text/html,bad)',
+            "sources": [{"title": '<img src=x onerror="alert(1)">', "url": "https://example.com/ref"}],
+        }
+    )
+
+    result = _run_async(summarizer.generate_summary([item], "2026-04-25", 1))
+
+    assert "<script>" not in result
+    assert "<img src=x" not in result
+    assert "<iframe" not in result
+    assert "<b onclick" not in result
+    assert "](javascript:" not in result
+    assert "](data:text/html" not in result
+    assert "&lt;script&gt;" in result
+    assert "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in result
+
+
+def test_generate_summary_rejects_unsafe_urls_and_quote_injection():
+    summarizer = DailySummarizer()
+    item = _make_item(1)
+    item.metadata.update(
+        {
+            "discussion_url": 'javascript:alert("discussion")',
+            "sources": [
+                {"title": 'Quoted "><script>alert(1)</script>', "url": 'https://example.com/\" onmouseover=\"alert(1)'},
+                {"title": "JavaScript", "url": "javascript:alert(1)"},
+                {"title": "Data", "url": "data:text/html,<script>alert(1)</script>"},
+            ],
+        }
+    )
+
+    result = _run_async(summarizer.generate_summary([item], "2026-04-25", 1))
+
+    assert 'href="https://example.com/%22%20onmouseover=%22alert%281%29"' in result
+    assert '<li>JavaScript</li>' in result
+    assert '<li>Data</li>' in result
+    assert 'href="javascript:' not in result
+    assert 'href="data:' not in result
+    assert '<script>' not in result
+
+
+def test_generate_summary_preserves_normal_http_links():
+    summarizer = DailySummarizer()
+    item = _make_item(1)
+    item.metadata.update(
+        {
+            "discussion_url": "https://example.com/discuss?id=1#comments",
+            "sources": [{"title": "Useful reference", "url": "https://docs.example.com/path?q=one&lang=en"}],
+        }
+    )
+
+    result = _run_async(summarizer.generate_summary([item], "2026-04-25", 1))
+
+    assert "[Important Item 1](https://example.com/items/1)" in result
+    assert "[Discussion](https://example.com/discuss?id=1#comments)" in result
+    assert 'href="https://docs.example.com/path?q=one&amp;lang=en"' in result

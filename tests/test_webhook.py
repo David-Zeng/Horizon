@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from src.models import ContentItem, SourceType, WebhookConfig
 from src.services.webhook import (
     WebhookNotifier,
+    WebhookDeliveryStatus,
     _format_markdown_for_webhook,
     _prepare_variables_for_body,
     _render,
@@ -433,8 +434,10 @@ class TestWebhookNotifier:
         config = WebhookConfig(enabled=False, url_env=_TEST_URL_ENV)
         notifier = WebhookNotifier(config)
         with patch("httpx.AsyncClient") as mock_client:
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
             mock_client.assert_not_called()
+            assert result.status == WebhookDeliveryStatus.DISABLED
+            assert result.sent is False
         del os.environ[_TEST_URL_ENV]
 
     def test_empty_url_env_skips_notification(self):
@@ -443,8 +446,10 @@ class TestWebhookNotifier:
         notifier = WebhookNotifier(config)
         assert notifier.url is None
         with patch("httpx.AsyncClient") as mock_client:
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
             mock_client.assert_not_called()
+            assert result.status == WebhookDeliveryStatus.SKIPPED
+            assert result.sent is False
 
     def test_get_request_when_no_body(self):
         os.environ[_TEST_URL_ENV] = "https://example.com/webhook?date=#{date}"
@@ -633,7 +638,7 @@ class TestWebhookNotifier:
             mock_client.__aexit__ = AsyncMock(return_value=False)
             mock_client_cls.return_value = mock_client
 
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
             call_kwargs = mock_client.post.call_args[1]
             assert call_kwargs["headers"]["X-Auth"] == "token123"
             assert call_kwargs["headers"]["X-Secret"] == "abc"
@@ -755,7 +760,7 @@ class TestWebhookNotifier:
             mock_client_cls.return_value = mock_client
 
             # Should not raise — error is logged and printed
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
         del os.environ[_TEST_URL_ENV]
 
 
@@ -1229,11 +1234,28 @@ class TestURLValidation:
         del os.environ[_TEST_URL_ENV]
 
     def test_valid_http_url_passes(self):
-        os.environ[_TEST_URL_ENV] = "http://localhost:8080/hook"
+        os.environ[_TEST_URL_ENV] = "http://example.com:8080/hook"
         config = WebhookConfig(enabled=True, url_env=_TEST_URL_ENV)
         notifier = WebhookNotifier(config)
-        assert notifier.url == "http://localhost:8080/hook"
+        assert notifier.url == "http://example.com:8080/hook"
         del os.environ[_TEST_URL_ENV]
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://localhost/hook",
+            "http://api.localhost/hook",
+            "https://user:password@example.com/hook",
+        ],
+    )
+    def test_unsafe_url_raises_value_error(self, url):
+        os.environ[_TEST_URL_ENV] = url
+        config = WebhookConfig(enabled=True, url_env=_TEST_URL_ENV)
+        try:
+            with pytest.raises(ValueError):
+                WebhookNotifier(config)
+        finally:
+            del os.environ[_TEST_URL_ENV]
 
     def test_no_hostname_raises_value_error(self):
         """URLs without a hostname raise ValueError."""
@@ -1329,13 +1351,16 @@ class TestHTTPStatusHandling:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "status=200" in printed
-            assert '"code":0' in printed
+            assert '"code":0' not in printed
             # Success response should be green, not yellow
             assert "[green]" in printed
+            assert result.status == WebhookDeliveryStatus.SUCCESS
+            assert result.sent is True
+            assert result.status_code == 200
         self._cleanup()
 
     def test_2xx_feishu_error_code_prints_yellow_warning(self):
@@ -1355,12 +1380,15 @@ class TestHTTPStatusHandling:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "19001" in printed
             assert "Feishu/Lark" in printed
             assert "[yellow]" in printed
+            assert result.status == WebhookDeliveryStatus.PLATFORM_FAILURE
+            assert result.sent is False
+            assert result.status_code == 200
         self._cleanup()
 
     def test_2xx_dingtalk_error_code_prints_yellow_warning(self):
@@ -1380,7 +1408,7 @@ class TestHTTPStatusHandling:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "errcode=400" in printed
@@ -1475,10 +1503,12 @@ class TestHTTPStatusHandling:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "client error" in printed.lower()
+            assert result.status == WebhookDeliveryStatus.HTTP_FAILURE
+            assert result.status_code == 400
         self._cleanup()
 
     def test_5xx_server_error_prints_warning(self):
@@ -1497,10 +1527,12 @@ class TestHTTPStatusHandling:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "server error" in printed.lower()
+            assert result.status == WebhookDeliveryStatus.HTTP_FAILURE
+            assert result.status_code == 500
         self._cleanup()
 
 
@@ -1529,10 +1561,12 @@ class TestExceptionClassification:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "connection failed" in printed.lower()
+            assert result.status == WebhookDeliveryStatus.NETWORK_FAILURE
+            assert result.error_type == "connect"
         self._cleanup()
 
     def test_timeout_exception_prints_warning(self):
@@ -1547,10 +1581,12 @@ class TestExceptionClassification:
             mock_client_cls.return_value = mock_client
 
             notifier.console = mock_console
-            _run_async(notifier.notify({"date": "2026-04-24"}))
+            result = _run_async(notifier.notify({"date": "2026-04-24"}))
 
             printed = " ".join(str(c) for c in mock_console.print.call_args_list)
             assert "timed out" in printed.lower()
+            assert result.status == WebhookDeliveryStatus.NETWORK_FAILURE
+            assert result.error_type == "timeout"
         self._cleanup()
 
     def test_invalid_url_exception_prints_warning(self):

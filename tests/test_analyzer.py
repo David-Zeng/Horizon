@@ -1,7 +1,9 @@
 import asyncio
+import json
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
+import pytest
 import src.ai.analyzer as analyzer_module
 from src.ai.analyzer import ContentAnalyzer
 from src.models import ContentItem, SourceType
@@ -94,3 +96,50 @@ def test_analyze_batch_concurrent_preserves_order(monkeypatch):
     result = asyncio.run(analyzer.analyze_batch(items))
 
     assert [item.id for item in result] == [item.id for item in items]
+
+
+def test_analyze_item_accepts_valid_result():
+    result = {
+        "score": 8.5,
+        "reason": "Relevant",
+        "summary": "A useful update",
+        "tags": ["ai", "research"],
+    }
+    client = SimpleNamespace(complete=lambda **kwargs: None)
+
+    async def complete(**kwargs):
+        return json.dumps(result)
+
+    client.complete = complete
+    item = _make_item("rss:test:valid")
+
+    asyncio.run(ContentAnalyzer(client)._analyze_item(item))
+
+    assert item.ai_score == 8.5
+    assert item.ai_reason == "Relevant"
+    assert item.ai_summary == "A useful update"
+    assert item.ai_tags == ["ai", "research"]
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        {"score": 11, "reason": "high", "summary": "summary", "tags": []},
+        {"score": float("nan"), "reason": "bad", "summary": "summary", "tags": []},
+        {"score": 5, "reason": 123, "summary": "summary", "tags": []},
+        {"score": 5, "reason": "ok", "summary": "summary", "tags": ["ok", 1]},
+        {"score": 5, "reason": "ok", "tags": []},
+    ],
+)
+def test_analyze_item_malformed_json_result_uses_fallback(result):
+    async def complete(**kwargs):
+        return json.dumps(result)
+
+    item = _make_item("rss:test:invalid")
+
+    asyncio.run(ContentAnalyzer(SimpleNamespace(complete=complete))._analyze_item(item))
+
+    assert item.ai_score == 0.0
+    assert item.ai_reason == "Analysis response parse failed"
+    assert item.ai_summary == item.title
+    assert item.ai_tags == []

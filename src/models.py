@@ -2,7 +2,8 @@
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, List, Dict, Any, Union
+import re
+from typing import Annotated, Literal, Optional, List, Dict, Any, NamedTuple, Union
 from pydantic import BaseModel, HttpUrl, Field, field_validator
 
 
@@ -19,6 +20,28 @@ class SourceType(str, Enum):
     OSSINSIGHT = "ossinsight"
     GDELT = "gdelt"
     GOOGLE_NEWS = "google_news"
+
+
+class SourceDefinition(NamedTuple):
+    """How a top-level source is represented in SourcesConfig."""
+
+    config_field: str
+    config_is_list: bool = False
+    item_fields: tuple[str, ...] = ()
+
+
+SOURCE_REGISTRY = {
+    SourceType.GITHUB.value: SourceDefinition("github", config_is_list=True),
+    SourceType.HACKERNEWS.value: SourceDefinition("hackernews"),
+    SourceType.RSS.value: SourceDefinition("rss", config_is_list=True),
+    SourceType.REDDIT.value: SourceDefinition("reddit", item_fields=("subreddits", "users")),
+    SourceType.TELEGRAM.value: SourceDefinition("telegram", item_fields=("channels",)),
+    SourceType.TWITTER.value: SourceDefinition("twitter", item_fields=("users",)),
+    SourceType.OPENBB.value: SourceDefinition("openbb", item_fields=("watchlists",)),
+    SourceType.OSSINSIGHT.value: SourceDefinition("ossinsight"),
+    SourceType.GDELT.value: SourceDefinition("gdelt"),
+    SourceType.GOOGLE_NEWS.value: SourceDefinition("google_news"),
+}
 
 
 class ContentItem(BaseModel):
@@ -55,43 +78,54 @@ class AIProvider(str, Enum):
     OLLAMA = "ollama"
 
 
-# Default models and API key env vars for each provider
+# Provider-specific defaults used by setup and provider-chain expansion.
 AI_PROVIDER_DEFAULTS = {
     AIProvider.ANTHROPIC: {
         "model": "claude-3-5-sonnet-20241022",
         "api_key_env": "ANTHROPIC_API_KEY",
+        "base_url": None,
     },
     AIProvider.OPENAI: {
         "model": "gpt-4",
         "api_key_env": "OPENAI_API_KEY",
+        "base_url": None,
     },
     AIProvider.AZURE: {
         "model": "gpt-4",
         "api_key_env": "AZURE_OPENAI_API_KEY",
+        "base_url": None,
+        "azure_endpoint_env": "AZURE_OPENAI_ENDPOINT",
+        "api_version": "2024-10-21",
     },
     AIProvider.ALI: {
         "model": "qwen-plus",
         "api_key_env": "DASHSCOPE_API_KEY",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     },
     AIProvider.GEMINI: {
         "model": "gemini-1.5-flash",
         "api_key_env": "GOOGLE_API_KEY",
+        "base_url": None,
     },
     AIProvider.DOUBAO: {
         "model": "doubao-pro-32k",
         "api_key_env": "DOUBAO_API_KEY",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
     },
     AIProvider.MINIMAX: {
-        "model": "MiniMax-Text-01",
+        "model": "MiniMax-M3",
         "api_key_env": "MINIMAX_API_KEY",
+        "base_url": "https://api.minimax.io/v1",
     },
     AIProvider.DEEPSEEK: {
         "model": "deepseek-chat",
         "api_key_env": "DEEPSEEK_API_KEY",
+        "base_url": "https://api.deepseek.com",
     },
     AIProvider.OLLAMA: {
         "model": "llama3.1",
         "api_key_env": "",
+        "base_url": "http://localhost:11434/v1",
     },
 }
 
@@ -114,6 +148,16 @@ class AIConfig(BaseModel):
     azure_endpoint_env: Optional[str] = None
     api_version: Optional[str] = None
 
+    @field_validator("languages")
+    @classmethod
+    def validate_languages(cls, languages: List[str]) -> List[str]:
+        """Allow conventional language tags while excluding path syntax."""
+        language_tag = re.compile(r"^[A-Za-z]{2,8}(?:[-_][A-Za-z0-9]{1,8})*$")
+        invalid = [language for language in languages if not language_tag.fullmatch(language)]
+        if invalid:
+            raise ValueError(f"invalid language code: {invalid[0]!r}")
+        return languages
+
 
 class GitHubSourceConfig(BaseModel):
     """GitHub source configuration."""
@@ -123,6 +167,7 @@ class GitHubSourceConfig(BaseModel):
     owner: Optional[str] = None
     repo: Optional[str] = None
     enabled: bool = True
+    category: Optional[str] = None
 
 
 class HackerNewsConfig(BaseModel):
@@ -131,6 +176,23 @@ class HackerNewsConfig(BaseModel):
     enabled: bool = True
     fetch_top_stories: int = 30
     min_score: int = 100
+    category: Optional[str] = None
+
+
+class ExtractorType(str, Enum):
+    TRAFILATURA = "trafilatura"
+
+
+class TrafilaturaExtractorConfig(BaseModel):
+    type: Literal[ExtractorType.TRAFILATURA] = ExtractorType.TRAFILATURA
+    favor_precision: bool = False
+    favor_recall: bool = False
+
+
+ExtractorConfig = Annotated[
+    Union[TrafilaturaExtractorConfig],
+    Field(discriminator="type"),
+]
 
 
 class RSSSourceConfig(BaseModel):
@@ -140,6 +202,7 @@ class RSSSourceConfig(BaseModel):
     url: HttpUrl
     enabled: bool = True
     category: Optional[str] = None
+    content_extractor: Optional[str] = None
 
 
 class RedditSubredditConfig(BaseModel):
@@ -153,6 +216,7 @@ class RedditSubredditConfig(BaseModel):
     )
     fetch_limit: int = 25
     min_score: int = 10
+    category: Optional[str] = None
 
 
 class RedditUserConfig(BaseModel):
@@ -162,6 +226,7 @@ class RedditUserConfig(BaseModel):
     enabled: bool = True
     sort: str = "new"
     fetch_limit: int = 10
+    category: Optional[str] = None
 
 
 class RedditConfig(BaseModel):
@@ -179,6 +244,7 @@ class TelegramChannelConfig(BaseModel):
     channel: str  # channel username, e.g. "zaihuapd"
     enabled: bool = True
     fetch_limit: int = 20
+    category: Optional[str] = None
 
 
 class TelegramConfig(BaseModel):
@@ -200,6 +266,7 @@ class TwitterConfig(BaseModel):
     mode: str = "apify"  # "apify" or "playwright"
     users: List[str] = Field(default_factory=list)
     fetch_limit: int = 10
+    category: Optional[str] = None
     fetch_reply_text: bool = False
     max_replies_per_tweet: int = 3
     max_tweets_to_expand: int = 10
@@ -264,6 +331,7 @@ class OSSInsightConfig(BaseModel):
     keywords: List[str] = Field(default_factory=list)
     min_stars: int = 5
     max_items: int = 30
+    category: Optional[str] = None
 
 
 class GDELTConfig(BaseModel):
@@ -428,5 +496,6 @@ class Config(BaseModel):
     ai: AIConfig
     sources: SourcesConfig
     filtering: FilteringConfig
+    extractors: Dict[str, ExtractorConfig] = Field(default_factory=dict)
     email: Optional[EmailConfig] = None
     webhook: Optional[WebhookConfig] = None

@@ -26,10 +26,11 @@ docs/
 *.md
 !README.md
 
-# Data (will be mounted as volume)
+# Local configuration, data, and runtime secrets
 .env
-data/summaries/
-data/subscribers.json
+data/*
+!data/config.example.json
+!data/presets.json
 
 # Build artifacts
 *.egg-info/

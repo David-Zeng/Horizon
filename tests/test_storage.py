@@ -1,7 +1,10 @@
 import json
 import pytest
 from pathlib import Path
-from src.storage.manager import StorageManager, ConfigError, _expand_env_vars
+import src._file_utils as file_utils
+from src.storage.manager import StorageManager, ConfigError, _expand_env_vars, safe_output_path
+from src.models import AIConfig
+from pydantic import ValidationError
 
 def test_load_config_missing_file(tmp_path):
     storage = StorageManager(data_dir=str(tmp_path))
@@ -126,3 +129,60 @@ def test_load_config_expands_env_vars_in_ai_base_url(tmp_path, monkeypatch):
     storage = StorageManager(data_dir=str(tmp_path))
     config = storage.load_config()
     assert config.ai.base_url == "https://private-proxy.example/v1"
+
+
+@pytest.mark.parametrize("language", ["en", "zh-CN", "pt_BR", "sr-Latn-RS"])
+def test_ai_config_accepts_normal_language_codes(language):
+    config = AIConfig(provider="openai", model="gpt-4o", api_key_env="OPENAI_API_KEY", languages=[language])
+    assert config.languages == [language]
+
+
+@pytest.mark.parametrize("language", ["../outside", "en/../../outside", "en\\outside", ".", ""])
+def test_ai_config_rejects_unsafe_language_codes(language):
+    with pytest.raises(ValidationError):
+        AIConfig(provider="openai", model="gpt-4o", api_key_env="OPENAI_API_KEY", languages=[language])
+
+
+def test_save_daily_summary_defensively_rejects_path_escape(tmp_path):
+    storage = StorageManager(data_dir=str(tmp_path / "data"))
+    with pytest.raises(ValueError, match="escapes intended root"):
+        storage.save_daily_summary("2026-07-13", "secret", language="../../../../outside")
+    assert not (tmp_path / "outside.md").exists()
+
+
+def test_safe_output_path_rejects_escape_from_other_output_roots(tmp_path):
+    with pytest.raises(ValueError, match="escapes intended root"):
+        safe_output_path(tmp_path / "docs" / "_posts", "../../../outside.md")
+
+
+def test_save_daily_summary_replace_failure_preserves_destination(tmp_path, monkeypatch):
+    storage = StorageManager(data_dir=str(tmp_path))
+    destination = storage.save_daily_summary("2026-07-13", "existing")
+
+    def fail_replace(source, target):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(file_utils.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="replace failed"):
+        storage.save_daily_summary("2026-07-13", "replacement")
+
+    assert destination.read_text(encoding="utf-8") == "existing"
+    assert list(destination.parent.glob(f".{destination.name}.*.tmp")) == []
+
+
+def test_save_subscribers_replace_failure_preserves_destination(tmp_path, monkeypatch):
+    storage = StorageManager(data_dir=str(tmp_path))
+
+    def fail_replace(source, target):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(file_utils.os, "replace", fail_replace)
+
+    subscribers_path = tmp_path / "subscribers.json"
+    subscribers_path.write_text('["old"]', encoding="utf-8")
+    with pytest.raises(OSError, match="replace failed"):
+        storage._save_subscribers(["new"])
+
+    assert subscribers_path.read_text(encoding="utf-8") == '["old"]'
+    assert list(tmp_path.glob(f".{subscribers_path.name}.*.tmp")) == []

@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from .._file_utils import _atomic_write_text
+
 
 STAGES = {
     "raw": "raw_items.json",
@@ -59,7 +61,7 @@ class RunStore:
     def save_summary(self, run_id: str, language: str, markdown: str) -> Path:
         filename = self._summary_file(language)
         path = self.run_dir(run_id) / filename
-        path.write_text(markdown, encoding="utf-8")
+        _atomic_write_text(path, markdown)
         return path
 
     def load_summary(self, run_id: str, language: str) -> str:
@@ -109,10 +111,7 @@ class RunStore:
 
     def write_json(self, run_id: str, filename: str, payload: Any) -> Path:
         path = self.run_dir(run_id) / filename
-        path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        _atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2))
         return path
 
     def read_json(self, run_id: str, filename: str) -> Any:

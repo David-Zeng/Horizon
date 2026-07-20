@@ -2,8 +2,9 @@ name: Daily Horizon Summary
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # Runs daily at 08:00 Asia/Shanghai
-      timezone: 'Asia/Shanghai'
+    # GitHub scheduled workflows use UTC. 20:00 UTC is 04:00 Asia/Shanghai;
+    # this intentionally runs early to offset the observed schedule delay.
+    - cron: '0 23 * * *'
   workflow_dispatch:      # Allow manual trigger
 
 jobs:
@@ -23,6 +24,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.26"
 
       - name: Install dependencies
         run: uv sync
